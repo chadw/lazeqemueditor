@@ -49,6 +49,7 @@ Now run migrations and the seeder. This will populate your lazeqemueditor db wit
 php artisan migrate
 php artisan db:seed
 ```
+After the seed runs your admin user credentials will be shown. Make sure to copy/paste somewhere safe.
 
 ### To set this up in production
 Copy over your lazeqemueditor db and run the following command on your production server
