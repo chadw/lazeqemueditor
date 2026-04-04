@@ -1,0 +1,13 @@
+<div role="alert" class="alert alert-soft alert-error">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+        stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+        class="stroke-current shrink-0 h-6 w-6">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+        <path d="M12 21a9 9 0 0 0 9 -9a9 9 0 0 0 -9 -9a9 9 0 0 0 -9 9a9 9 0 0 0 9 9" />
+        <path d="M9 8l6 8" />
+        <path d="M15 8l-6 8" />
+    </svg>
+    <div class="w-full">
+        {{ $slot }}
+    </div>
+</div>

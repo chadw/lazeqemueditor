@@ -1,0 +1,249 @@
+@import 'tailwindcss';
+@import './spell-icons.css';
+@import './item-icons.css';
+@import './objects.css';
+@import './race-models.css';
+@import "tom-select/dist/css/tom-select.css";
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source "../../vendor/mckenziearts/laravel-notify/resources/views/**/*.blade.php";
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+@source inline("text-base-content text-base-content/{10..90..10}");
+@source inline("border-base-content border-base-content/{10..90..10}");
+@source inline("{h-,min-h-,max-h-}{0..200..1}");
+@source inline("{w-,min-w-,max-w-}{0..100..1}");
+@source inline("{p,px,py,pt,pb,pl,pr}-{0..64..1}");
+@source inline("{m,mx,my,mt,mb,ml,mr}-{0..64..1}");
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+@plugin "daisyui" {
+    themes: light, dark, night --prefersdark;
+}
+
+@layer components {
+    .tab.tab-dirty {
+        @apply text-warning! border-b-2 border-warning!;
+    }
+
+    .tab.tab-dirty::after {
+        content: " •";
+        @apply ml-1 text-warning! font-black;
+    }
+}
+
+.text-tiny {
+    font-size: 0.685rem;
+    line-height: 0.9rem;
+    word-spacing: 0.5;
+    letter-spacing: normal;
+    font-weight: 500;
+}
+
+[x-cloak] {
+    display: none !important;
+}
+
+.label {
+    font-weight: bold;
+}
+
+.collapse-title {
+    z-index: 10;
+    pointer-events: auto;
+}
+
+@keyframes castShrink {
+    from {
+        transform: scaleX(1);
+    }
+
+    to {
+        transform: scaleX(0);
+    }
+}
+
+.progress-fill {
+    position: absolute !important;
+    top: 0;
+    bottom: 0;
+    right: 0 !important;
+    left: auto !important;
+    width: auto;
+    will-change: width;
+    transition: none !important;
+    display: none;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.progress-overlay {
+    z-index: 10;
+    /* stay above the fill */
+    position: absolute;
+    /* keep centered overlay behavior */
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.text-heroic-stat {
+    color: #d6b429;
+}
+
+/* guild ranks */
+.guildrank-icon {
+    background-image: url('../img/guild_ranks.png');
+    background-repeat: no-repeat;
+    width: 16px;
+    height: 17px;
+    display: inline-block;
+}
+
+.guildrank-1 {
+    background-position: -16px -0;
+}
+
+.guildrank-2 {
+    background-position: -32px -0;
+}
+
+.guildrank-3 {
+    background-position: -0 -17px;
+}
+
+.guildrank-4 {
+    background-position: -16px -17px;
+}
+
+.guildrank-5 {
+    background-position: -32px -17px;
+}
+
+.guildrank-6 {
+    background-position: -48px -0;
+}
+
+.guildrank-7 {
+    background-position: -48px -17px;
+}
+
+.guildrank-8 {
+    background-position: -0 -0;
+}
+
+h2.card-title {
+    @apply font-bold text-accent/70 uppercase tracking-wide;
+}
+
+.card .table tbody tr {
+    @apply hover:bg-neutral/50 transition-colors hover:ring-1 hover:ring-inset hover:ring-base-300/50
+}
+
+/* tom select */
+.ts-control,
+.ts-wrapper.single.input-active .ts-control {
+    @apply p-2.5 bg-base-300 text-base-content border border-base-300 rounded-md;
+}
+
+.ts-wrapper.single.input-active .ts-control {
+    @apply bg-base-300 text-base-content;
+}
+
+.ts-wrapper.multi .ts-control>div {
+    @apply bg-neutral text-neutral-content font-semibold;
+}
+
+.ts-wrapper.plugin-remove_button:not(.rtl) .item .remove {
+    @apply border-l border-neutral-content/10;
+}
+
+.ts-wrapper.focus {
+    box-shadow: none;
+    @apply ring ring-base-content/10 outline-none;
+}
+
+.ts-dropdown {
+    @apply rounded-md border border-base-300 shadow-xl bg-base-100 z-20;
+}
+
+.ts-dropdown-content .option {
+    @apply p-2 hover:bg-base-200 cursor-pointer;
+}
+
+.ts-dropdown-content .option.active {
+    @apply bg-base-300 text-primary-content;
+}
+
+.ts-dropdown,
+.ts-control,
+.ts-control input {
+    @apply text-primary-content;
+}
+
+.ts-dropdown.dropup {
+    bottom: 100%;
+    top: auto;
+}
+
+.ts-wrapper:not(.form-control, .form-select).single .ts-control {
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23ecf9ff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3E%3C/svg%3E");
+    background-position: right .75rem center;
+    background-repeat: no-repeat;
+    background-size: 16px 12px
+}
+
+.ts-control>.ts-item-flex {
+    display: flex !important;
+    align-items: center;
+    vertical-align: middle;
+}
+
+html[data-theme="dark"] .ts-control,
+html[data-theme="dark"] .ts-dropdown {
+    @apply border-gray-600 bg-base-100 text-white;
+}
+
+.clr-field {
+    @apply w-full;
+}
+
+.clr-field button {
+    width: 40px !important;
+}
+
+.sort-ascending,
+.sort-descending {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    vertical-align: middle;
+    background-color: currentColor;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+}
+
+.link-accent + .sort-icon {
+    background-color: var(--color-secondary, oklch(var(--a)));
+}
+
+.sort-ascending {
+    -webkit-mask-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l7 0" /><path d="M4 12l7 0" /><path d="M4 18l9 0" /><path d="M15 9l3 -3l3 3" /><path d="M18 6l0 12" /></svg>');
+    mask-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l7 0" /><path d="M4 12l7 0" /><path d="M4 18l9 0" /><path d="M15 9l3 -3l3 3" /><path d="M18 6l0 12" /></svg>');
+}
+
+.sort-descending {
+    -webkit-mask-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l9 0" /><path d="M4 12l7 0" /><path d="M4 18l7 0" /><path d="M15 15l3 3l3 -3" /><path d="M18 6l0 12" /></svg>');
+    mask-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l9 0" /><path d="M4 12l7 0" /><path d="M4 18l7 0" /><path d="M15 15l3 3l3 -3" /><path d="M18 6l0 12" /></svg>');
+}

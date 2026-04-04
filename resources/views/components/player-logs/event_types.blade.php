@@ -1,0 +1,60 @@
+{{--
+1  => 'GM Command',
+2  => 'Zoning',
+3  => 'AA Gain',
+4  => 'AA Purchase',
+5  => 'Forage Success',
+6  => 'Forage Failure',
+7  => 'Fish Success',
+8  => 'Fish Failure',
+9  => 'Item Destroy',
+10 => 'Went Online',
+11 => 'Went Offline',
+12 => 'Level Gain',
+13 => 'Level Loss',
+14 => 'Loot Item',
+15 => 'Merchant Purchase',
+16 => 'Merchant Sell',
+21 => 'Groundspawn Pickup',
+22 => 'NPC Handin',
+23 => 'Skill Up',
+24 => 'Task Accept',
+25 => 'Task Update',
+26 => 'Task Complete',
+27 => 'Trade',
+29 => 'Say',
+30 => 'Rez Accepted',
+31 => 'Death',
+32 => 'Combine Failure',
+33 => 'Combine Success',
+34 => 'Dropped Item',
+35 => 'Split Money',
+38 => 'Trader Purchase',
+39 => 'Trader Sell',
+42 => 'Discover Item',
+43 => 'Possible Hack',
+44 => 'Killed NPC',
+45 => 'Killed Named NPC',
+46 => 'Killed Raid NPC',
+47 => 'Item Creation',
+48 => 'Guild Tribute Donate Item',
+49 => 'Guild Tribute Donate Plat',
+50 => 'Parcel Item Sent',
+51 => 'Parcel Item Retrieved',
+52 => 'Parcel Item Destroyed',
+53 => 'Barter Transaction',
+54 => 'Player Speech',
+55 => 'Item Evolved',
+56 => 'Guild Bank Item Deposit',
+57 => 'Guild Bank Item Withdrawal',
+58 => 'Guild Bank Move From Deposit Area to Bank Area',
+--}}
+@if($log->event_type_id)
+    <x-dynamic-component
+        :component="'player-logs.events.' . $log->event_type_id"
+        :log="$log"
+        :altCurrency="$altCurrency"
+    />
+@else
+    Unknown Event ({{ $log->event_type_id }})
+@endif
