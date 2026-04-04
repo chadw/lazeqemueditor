@@ -11,9 +11,14 @@ class NpcSpellEffectEntryController extends Controller
     {
         $data = $request->validated();
 
-        NpcSpellEffectEntry::create($data);
+        $model = NpcSpellEffectEntry::create($data);
+        toast()->success('Saved!', 'NPC Spell Effect entry added.');
 
-        return back()->with('success', 'NPC Spell Effect entry added.');
+        return response()->json([
+            'success'  => true,
+            'data'     => $model->fresh(),
+            'redirect' => url()->previous(),
+        ], 201);
     }
 
     public function update(NpcSpellEffectEntryRequest $request, NpcSpellEffectEntry $npcSpellEffectEntry)
@@ -21,14 +26,20 @@ class NpcSpellEffectEntryController extends Controller
         $data = $request->validated();
 
         $npcSpellEffectEntry->update($data);
+        toast()->success('Saved!', 'NPC Spell Effect entry updated.');
 
-        return back()->with('success', 'NPC Spell Effect entry updated.');
+        return response()->json([
+            'success'  => true,
+            'data'     => $npcSpellEffectEntry->fresh(),
+            'redirect' => url()->previous(),
+        ], 201);
     }
 
     public function destroy(NpcSpellEffectEntry $npcSpellEffectEntry)
     {
         $npcSpellEffectEntry->delete();
+        toast()->success('Deleted!', 'NPC Spell Effect entry deleted.');
 
-        return back()->with('success', 'NPC Spell Effect entry deleted.');
+        return back();
     }
 }

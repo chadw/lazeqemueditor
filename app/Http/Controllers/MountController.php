@@ -19,27 +19,34 @@ class MountController extends Controller
 
     public function store(HorseRequest $request)
     {
-        Horse::create($request->validated());
+        $data = $request->validated();
 
+        $model = Horse::create($data);
         toast()->success('Saved!', 'Mount created.');
 
-        return back();
+        return response()->json([
+            'success'  => true,
+            'data'     => $model->fresh(),
+            'redirect' => url()->previous(),
+        ], 201);
     }
 
     public function update(HorseRequest $request, Horse $horse)
     {
         $horse->update($request->validated());
-
         toast()->success('Saved!', 'Mount updated.');
 
-        return back();
+        return response()->json([
+            'success'  => true,
+            'data'     => $horse->fresh(),
+            'redirect' => url()->previous(),
+        ], 201);
     }
 
     public function destroy(Horse $horse)
     {
         $horse->delete();
-
-        toast()->success('Saved!', 'Mount deleted.');
+        toast()->success('Deleted!', 'Mount deleted.');
 
         return back();
     }

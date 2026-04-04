@@ -21,9 +21,14 @@ class NpcEmoteController extends Controller
     {
         $data = $request->validated();
 
-        NpcEmote::create($data);
+        $model = NpcEmote::create($data);
+        toast()->success('Saved!', 'NPC Emote created.');
 
-        return back()->with('success', 'NPC Emote created.');
+        return response()->json([
+            'success'  => true,
+            'data'     => $model->fresh(),
+            'redirect' => url()->previous(),
+        ], 201);
     }
 
     public function update(NpcEmoteRequest $request, NpcEmote $npcEmote)
@@ -31,14 +36,20 @@ class NpcEmoteController extends Controller
         $data = $request->validated();
 
         $npcEmote->update($data);
+        toast()->success('Saved!', 'NPC Emote updated.');
 
-        return back()->with('success', 'NPC Emote updated.');
+        return response()->json([
+            'success'  => true,
+            'data'     => $npcEmote->fresh(),
+            'redirect' => url()->previous(),
+        ], 201);
     }
 
     public function destroy(NpcEmote $npcEmote)
     {
         $npcEmote->delete();
+        toast()->success('Deleted!', 'NPC Emote deleted.');
 
-        return back()->with('success', 'NPC Emote deleted.');
+        return back();
     }
 }

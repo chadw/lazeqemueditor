@@ -1,4 +1,4 @@
-<div class="card bg-base-200 card-sm shadow-sm">
+<div class="card bg-base-200 card-sm shadow-sm" x-data="formTracker">
     <div class="card-body">
         <div class="grid grid-cols-1 gap-4 mb-2">
             <input
@@ -19,26 +19,35 @@
             <x-form.input
                 name="minlevel"
                 label="Min Level"
+                type="number"
+                min="0"
+                max="255"
                 x-model="$store.modalForm.form.minlevel"
             />
             <x-form.input
                 name="maxlevel"
                 label="Max Level"
+                type="number"
+                min="0"
+                max="255"
                 x-model="$store.modalForm.form.maxlevel"
             />
             <x-form.input
                 name="se_base"
                 label="SE Base"
+                type="number"
                 x-model="$store.modalForm.form.se_base"
             />
             <x-form.input
                 name="se_limit"
                 label="SE Limit"
+                type="number"
                 x-model="$store.modalForm.form.se_limit"
             />
             <x-form.input
                 name="se_max"
                 label="SE Max"
+                type="number"
                 x-model="$store.modalForm.form.se_max"
             />
         </div>

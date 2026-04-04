@@ -1,4 +1,4 @@
-<div class="card bg-base-200 card-sm shadow-sm mb-6">
+<div class="card bg-base-200 card-sm shadow-sm" x-data="formTracker">
     <div class="card-body">
         <h2 class="card-title">NPC Spell Effect</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">

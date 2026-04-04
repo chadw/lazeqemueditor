@@ -23,22 +23,33 @@ class StartingItemController extends Controller
 
     public function store(StartingItemRequest $request)
     {
-        StartingItem::create($request->validated());
+        $model = StartingItem::create($request->validated());
+        toast()->success('Saved!', 'Starting Item created.');
 
-        return back()->with('success', 'Starting Item created.');
+        return response()->json([
+            'success'  => true,
+            'data'     => $model->fresh(),
+            'redirect' => url()->previous(),
+        ], 201);
     }
 
     public function update(StartingItemRequest $request, StartingItem $startingItem)
     {
         $startingItem->update($request->validated());
+        toast()->success('Saved!', 'Starting Item updated.');
 
-        return back()->with('success', 'Starting Item updated.');
+        return response()->json([
+            'success'  => true,
+            'data'     => $startingItem->fresh(),
+            'redirect' => url()->previous(),
+        ], 201);
     }
 
     public function destroy(StartingItem $startingItem)
     {
         $startingItem->delete();
+        toast()->success('Saved!', 'Starting Item deleted.');
 
-        return back()->with('success', 'Starting Item deleted.');
+        return back();
     }
 }

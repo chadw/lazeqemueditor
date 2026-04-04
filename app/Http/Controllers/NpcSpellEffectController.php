@@ -38,14 +38,16 @@ class NpcSpellEffectController extends Controller
         $data = $request->validated();
 
         $npcSpellEffect->update($data);
+        toast()->success('Saved!', 'NPC Spell Effect updated.');
 
-        return back()->with('success', 'NPC Spell Effect updated.');
+        return back();
     }
 
     public function destroy(NpcSpellEffect $npcSpellEffect)
     {
         $npcSpellEffect->delete();
+        toast()->success('Deleted!', 'NPC Spell Effect deleted.');
 
-        return back()->with('success', 'NPC Spell Effect deleted.');
+        return back();
     }
 }

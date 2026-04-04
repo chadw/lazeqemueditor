@@ -8,7 +8,12 @@
                         baseUrl: '{{ route('npc-spell-effect-entry.store') }}',
                         resourceName: 'NPC Spell Effect Entry',
                         defaults: {
-                            npc_spells_effects_id: {{ $npcSpellEffect->id }}
+                            npc_spells_effects_id: {{ $npcSpellEffect->id }},
+                            minlevel: 0,
+                            maxlevel: 255,
+                            se_base: 0,
+                            se_limit: 0,
+                            se_max: 0,
                         }
                     })">
                     <x-ui.icon name="add" /> New NPC Spell Effect Entry
