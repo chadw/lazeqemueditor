@@ -30,7 +30,11 @@
                     @foreach ($abilities as $ability)
                         <tr>
                             <td>{{ $ability->id }}</td>
-                            <td class="font-medium">{{ $ability->name }}</td>
+                            <td>
+                                <a href="{{ route('aa.edit', $ability) }}" class="text-base link-accent link-hover">
+                                    {{ $ability->name }}
+                                </a>
+                            </td>
                             <td>
                                 @php
                                     if (($ability->classes ?? 0) === 65535) {

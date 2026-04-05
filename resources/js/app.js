@@ -1310,7 +1310,6 @@ Alpine.data('aaRankEffects', () => ({
     async populateTypedField(idx, field) {
         const valueRaw = this.effectsArray[idx]?.[field];
         if (!valueRaw) return;
-        if (this.isLimitSpellField(idx, field)) return;
 
         const value = Math.abs(Number(valueRaw));
 

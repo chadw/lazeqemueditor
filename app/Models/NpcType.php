@@ -178,8 +178,12 @@ class NpcType extends BaseModel
         );
     }
 
-    public static function npcFixName(string $npc): string
+    public static function npcFixName(?string $npc): string
     {
+        if (empty($npc)) {
+            return '';
+        }
+
         $name = str_replace(['#', '!', '~'], '', $npc);
         $name = str_replace('_', ' ', $name);
         $name = str_replace('-', '`', $name);

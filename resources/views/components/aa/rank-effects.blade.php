@@ -94,7 +94,7 @@
                                 <template x-if="isLimitSpellField(i, 'base1')">
                                     <div x-data="limitSpellSelect(i, effect.base1, 'base')" class="flex gap-2">
                                         <div x-data="ajaxSelect({ searchUrl: '/spells/search', lazy: true })" class="flex-1">
-                                            <select data-limit-spell :name="`base1_display[]`" x-ref="select"></select>
+                                            <select data-limit-spell :name="`base1_display[]`" :data-idx="i" data-field="base1" x-ref="select"></select>
                                         </div>
 
                                         <select class="select w-20" x-model="mode">
