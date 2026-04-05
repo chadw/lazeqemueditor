@@ -99,6 +99,20 @@
                     min="0"
                     :value="$npc->spawn_limit"
                 />
+                <x-form.input
+                    name="merchant_id"
+                    label="Merchant ID"
+                    type="number"
+                    min="0"
+                    :value="$npc->merchant_id"
+                />
+                <x-form.input
+                    name="alt_currency_id"
+                    label="Alt Currency Merchant ID"
+                    type="number"
+                    min="0"
+                    :value="$npc->alt_currency_id"
+                />
             </div>
         </div>
     </div>

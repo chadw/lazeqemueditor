@@ -101,11 +101,31 @@
                 :checked="$npc->isquest"
             />
             <x-form.checkbox
+                name="private_corpse"
+                label="Is Private Corpse"
+                :checked="$npc->private_corpse"
+            />
+            <x-form.checkbox
+                name="is_parcel_merchant"
+                label="Is Parcel Merchant"
+                :checked="$npc->is_parcel_merchant"
+            />
+            <x-form.checkbox
                 name="underwater"
                 label="Underwater NPC"
                 :checked="$npc->underwater"
             />
             <div class="divider divider-horizontal"></div>
+            <x-form.checkbox
+                name="skip_global_loot"
+                label="Skip Global Loot"
+                :checked="$npc->skip_global_loot"
+            />
+            <x-form.checkbox
+                name="keeps_sold_items"
+                label="Keep Sold Items"
+                :checked="$npc->keeps_sold_items"
+            />
             <x-form.checkbox
                 name="no_target_hotkey"
                 label="No Target Hotkey"
@@ -124,7 +144,3 @@
         </div>
     </div>
 </div>
-
-        'private_corpse' => 'boolean',
-        'skip_global_loot' => 'boolean',
-        'keeps_sold_items' => 'boolean',
