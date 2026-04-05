@@ -237,13 +237,21 @@ class ItemController extends Controller
             $new->save();
         });
 
-        $redirect = $request->input('redirect', 'edit');
-        if ($redirect === 'index') {
-            return back()->with('success', 'Item cloned.')->with('new_id', $newId);
-            //return redirect()->route('items.index')->with('status', 'Item cloned')->with('new_id', $newId);
+        try {
+            $userName = auth()->user()?->name ?? 'System';
+            $message = "[CLONED] [Item] - **User**: {$userName}, **Original:** ({$item->id}) {$item->Name}, **Cloned to:** ({$newId}) {$new->Name}";
+            DiscordAlert::message($message);
+        } catch (\Throwable $e) {
         }
 
-        return redirect()->route('items.edit', $new)->with('status', 'Item cloned');
+        toast()->success('Cloned!', 'Item cloned.');
+
+        $redirect = $request->input('redirect', 'edit');
+        if ($redirect === 'index') {
+            return back()->with('new_id', $newId);
+        }
+
+        return redirect()->route('items.edit', $new);
     }
 
     public function destroy(Item $item)

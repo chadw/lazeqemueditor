@@ -33,4 +33,26 @@ class AaRankPrereq extends BaseModel
         return $this->belongsTo(AaAbility::class, 'aa_id')
             ->select('id', 'name');
     }
+
+    public function getKey()
+    {
+        return "{$this->rank_id}-{$this->aa_id}";
+    }
+
+    public function getKeyName()
+    {
+        return 'rank_id';
+    }
+
+    protected function setKeysForSaveQuery($query)
+    {
+        return $query->where('rank_id', $this->getAttribute('rank_id'))
+            ->where('aa_id', $this->getAttribute('aa_id'));
+    }
+
+    protected function setKeysForSelectQuery($query)
+    {
+        return $query->where('rank_id', $this->getAttribute('rank_id'))
+            ->where('aa_id', $this->getAttribute('aa_id'));
+    }
 }

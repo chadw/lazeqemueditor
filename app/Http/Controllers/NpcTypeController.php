@@ -344,7 +344,7 @@ class NpcTypeController extends Controller
     }
 
     /**
-     * Duplicate an npc.
+     * Duplicate an npc and spawns
      * Redirects to the edit page for the new npc.
      *
      * @param  mixed $request
@@ -365,20 +365,106 @@ class NpcTypeController extends Controller
         $new->name = $newName;
 
         $newId = null;
-        DB::connection('eqemu')->transaction(function () use (&$new, &$newId) {
+        DB::connection('eqemu')->transaction(function () use (&$new, &$newId, $npc) {
+
+            $conn = DB::connection('eqemu');
+
+            // clone npc to new id
             $table = $new->getTable();
-            $max = DB::connection('eqemu')->table($table)->lockForUpdate()->max('id');
+            $max = $conn->table($table)->lockForUpdate()->max('id');
             $newId = (($max ?? 0) + 1);
             $new->id = $newId;
             $new->save();
+
+            // get all spawn entries for original npc
+            $spawnEntries = $conn->table('spawnentry')
+                ->where('npcID', $npc->id)
+                ->get();
+
+            $groupMap = [];
+            foreach ($spawnEntries as $entry) {
+                $origGroupId = $entry->spawngroupID;
+
+                if (!isset($groupMap[$origGroupId])) {
+
+                    $origGroup = $conn->table('spawngroup')
+                        ->where('id', $origGroupId)
+                        ->first();
+
+                    if ($origGroup) {
+                        // avoid name conflict because spawngroup needs distinct name
+                        $baseName = $origGroup->name ?? 'spawngroup';
+                        $newName = $baseName . '_copy_' . $newId;
+                        $counter = 1;
+                        while ($conn->table('spawngroup')->where('name', $newName)->exists()) {
+                            $newName = $baseName . '_copy_' . $newId . '_' . $counter++;
+                        }
+
+                        // spawngroup
+                        $groupData = [
+                            'name' => $newName,
+                            'spawn_limit' => $origGroup->spawn_limit ?? null,
+                            'dist' => $origGroup->dist ?? null,
+                            'max_x' => $origGroup->max_x ?? null,
+                            'min_x' => $origGroup->min_x ?? null,
+                            'max_y' => $origGroup->max_y ?? null,
+                            'min_y' => $origGroup->min_y ?? null,
+                            'delay' => $origGroup->delay ?? null,
+                            'mindelay' => $origGroup->mindelay ?? null,
+                            'despawn' => $origGroup->despawn ?? null,
+                            'despawn_timer' => $origGroup->despawn_timer ?? null,
+                            'wp_spawns' => $origGroup->wp_spawns ?? 0,
+                        ];
+
+                        $newGroupId = $conn->table('spawngroup')->insertGetId($groupData);
+
+                        // spawn2
+                        $spawn2Rows = $conn->table('spawn2')
+                            ->where('spawngroupID', $origGroupId)
+                            ->get();
+
+                        foreach ($spawn2Rows as $s2) {
+                            $s2Data = (array) $s2;
+                            unset($s2Data['id']);
+                            $s2Data['spawngroupID'] = $newGroupId;
+                            $conn->table('spawn2')->insert($s2Data);
+                        }
+
+                        $groupMap[$origGroupId] = $newGroupId;
+                    } else {
+                        // no group wtf?
+                        $groupMap[$origGroupId] = null;
+                    }
+                }
+
+                $newGroupIdForEntry = $groupMap[$origGroupId];
+                if ($newGroupIdForEntry === null) {
+                    continue;
+                }
+
+                // spawnentry
+                $entryData = (array) $entry;
+                $entryData['spawngroupID'] = $newGroupIdForEntry;
+                $entryData['npcID'] = $newId;
+                $conn->table('spawnentry')->insert($entryData);
+            }
         });
+
+        try {
+            $userName = auth()->user()?->name ?? 'System';
+            $message = "[CLONED] [NPC] - **User**: {$userName}, **Original:** ({$npc->id}) {$npc->name}, **Cloned to:** ({$newId}) {$new->name}";
+            DiscordAlert::message($message);
+        } catch (\Throwable $e) {
+        }
+
+        toast()->success('Cloned!', 'NPC and related spawns cloned.');
 
         $redirect = $request->input('redirect', 'edit');
         if ($redirect === 'index') {
-            return back()->with('success', 'NPC cloned.')->with('new_id', $newId);
+            return back()->with('new_id', $newId);
         }
 
-        return redirect()->route('npcs.edit', $new)->with('status', 'NPC cloned');
+        return redirect()->route('npcs.edit', $new);
     }
 
     /**

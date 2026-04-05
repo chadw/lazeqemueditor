@@ -54,17 +54,26 @@
                                 </span>
                             </td>
                             <td class="text-right">
-                                <a href="{{ route('aa.edit', $ability) }}" class="btn btn-sm btn-soft tooltip"
-                                    data-tip="Edit">
-                                    <x-ui.icon name="edit" />
-                                </a>
-                                <form action="{{ route('aa.destroy', $ability) }}" method="POST" class="inline">
-                                    @csrf @method('DELETE')
-                                    <button class="btn btn-sm btn-soft btn-error tooltip" data-tip="Delete"
-                                        onclick="return confirm('Delete this AA and all related ranks?')">
-                                        <x-ui.icon name="delete" />
-                                    </button>
-                                </form>
+                                <div class="join">
+                                    <form method="POST" action="{{ route('aa.clone', $ability) }}" class="inline">
+                                        @csrf
+                                        <input type="hidden" name="redirect" value="edit" />
+                                        <button type="submit" class="btn btn-soft btn-sm btn-info join-item tooltip" data-tip="Clone">
+                                            <x-ui.icon name="clone" />
+                                        </button>
+                                    </form>
+                                    <a href="{{ route('aa.edit', $ability) }}" class="btn btn-sm btn-soft join-item tooltip"
+                                        data-tip="Edit">
+                                        <x-ui.icon name="edit" />
+                                    </a>
+                                    <form action="{{ route('aa.destroy', $ability) }}" method="POST" class="inline">
+                                        @csrf @method('DELETE')
+                                        <button class="btn btn-sm btn-soft btn-error join-item tooltip" data-tip="Delete"
+                                            onclick="return confirm('Delete this AA and all related ranks?')">
+                                            <x-ui.icon name="delete" />
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     @endforeach

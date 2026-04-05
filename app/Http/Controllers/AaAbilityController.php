@@ -9,8 +9,11 @@ use App\Models\AaRank;
 use App\Models\AaRankEffect;
 use App\Models\AaRankPrereq;
 use App\Services\AaRankService;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Spatie\DiscordAlerts\Facades\DiscordAlert;
 
 class AaAbilityController extends Controller
 {
@@ -171,53 +174,99 @@ class AaAbilityController extends Controller
 
         $new->name = $newName;
 
-        DB::transaction(function () use (&$new, $ability) {
-            $new->save();
+        // count for discord msg
+        $rankCount = 0;
+        $prereqCount = 0;
 
-            $oldToNewRank = [];
-            $rank = AaRank::find($ability->first_rank_id);
-            while ($rank) {
-                $rnew = $rank->replicate();
-                $rnew->id = null;
-                $rnew->prev_id = 0;
-                $rnew->next_id = 0;
-                $rnew->save();
+        try {
+            Model::withoutEvents(function () use (&$new, $ability, &$rankCount, &$prereqCount) {
+                $conn = DB::connection('eqemu');
 
-                $oldToNewRank[$rank->id] = $rnew->id;
+                $conn->transaction(function () use (&$new, $ability, &$rankCount, &$prereqCount, $conn) {
+                    // rank chain
+                    $ranksToClone = [];
+                    $rptr = $ability->first_rank_id ? AaRank::find($ability->first_rank_id) : null;
+                    while ($rptr) {
+                        $ranksToClone[] = $rptr;
+                        $rptr = $rptr->next_id > 0 ? AaRank::find($rptr->next_id) : null;
+                    }
 
-                // clone effects
-                foreach ($rank->effects()->get() as $eff) {
-                    $neff = $eff->replicate();
-                    $neff->rank_id = $rnew->id;
-                    $neff->save();
-                }
+                    // reserve ids for ranks
+                    $nextRankId = (int) ($conn->table('aa_ranks')->lockForUpdate()->max('id') ?? 0);
+                    $oldToNewRank = [];
+                    foreach ($ranksToClone as $r) {
+                        $nextRankId++;
+                        $oldToNewRank[$r->id] = $nextRankId;
+                    }
 
-                // clone prereqs
-                foreach ($rank->prereqs()->get() as $pr) {
-                    $npr = $pr->replicate();
-                    $npr->rank_id = $rnew->id;
-                    $npr->save();
-                }
+                    // clone ability with first_rank_id set to new id (if any)
+                    $table = $new->getTable();
+                    $max = $conn->table($table)->lockForUpdate()->max('id');
+                    $newId = (($max ?? 0) + 1);
 
-                $rank = $rank->next_id > 0 ? AaRank::find($rank->next_id) : null;
+                    $attrs = $new->getAttributes();
+                    $attrs['id'] = $newId;
+                    $attrs['first_rank_id'] = isset($oldToNewRank[$ability->first_rank_id]) ? $oldToNewRank[$ability->first_rank_id] : 0;
+                    $attrs['enabled'] = $attrs['enabled'] ?? 0;
+                    $attrs['grant_only'] = $attrs['grant_only'] ?? 0;
+                    $attrs['reset_on_death'] = $attrs['reset_on_death'] ?? 0;
+                    $attrs['auto_grant_enabled'] = $attrs['auto_grant_enabled'] ?? 0;
+
+                    $conn->table($table)->insert($attrs);
+                    $new = AaAbility::find($newId);
+
+                    // insert ranks using allocated ids and set prev/next mapped values
+                    foreach ($ranksToClone as $r) {
+                        $rid = $oldToNewRank[$r->id];
+                        $rattrs = $r->getAttributes();
+                        $rattrs['id'] = $rid;
+                        $rattrs['prev_id'] = isset($oldToNewRank[$r->prev_id]) ? $oldToNewRank[$r->prev_id] : 0;
+                        $rattrs['next_id'] = isset($oldToNewRank[$r->next_id]) ? $oldToNewRank[$r->next_id] : 0;
+
+                        $conn->table('aa_ranks')->insert($rattrs);
+                        $rankCount++;
+
+                        // clone effects
+                        foreach ($r->effects()->get() as $eff) {
+                            $conn->table('aa_rank_effects')->updateOrInsert(
+                                ['rank_id' => $rid, 'slot' => $eff->slot],
+                                [
+                                    'rank_id' => $rid,
+                                    'slot' => $eff->slot,
+                                    'effect_id' => $eff->effect_id ?? 0,
+                                    'base1' => $eff->base1 ?? 0,
+                                    'base2' => $eff->base2 ?? 0,
+                                ]
+                            );
+                        }
+
+                        // clone prereqs
+                        foreach ($r->prereqs()->get() as $pr) {
+                            $conn->table('aa_rank_prereqs')->updateOrInsert(
+                                ['rank_id' => $rid, 'aa_id' => $pr->aa_id],
+                                ['rank_id' => $rid, 'aa_id' => $pr->aa_id, 'points' => $pr->points ?? 0]
+                            );
+                            $prereqCount++;
+                        }
+                    }
+                });
+            });
+
+            try {
+                $userName = auth()->user()?->name ?? 'System';
+                $message = "[CLONED] [AaAbility] **User**: {$userName}, **Original:** ({$ability->id}) {$ability->name}, **Cloned to:** ({$new->id}) {$new->name} ({$rankCount} ranks, {$prereqCount} prereqs)";
+                DiscordAlert::message($message);
+            } catch (\Throwable $e) {
             }
 
-            foreach ($oldToNewRank as $oldId => $newId) {
-                $old = AaRank::find($oldId);
-                $n = AaRank::find($newId);
-                $n->prev_id = ($old->prev_id && isset($oldToNewRank[$old->prev_id])) ? $oldToNewRank[$old->prev_id] : 0;
-                $n->next_id = ($old->next_id && isset($oldToNewRank[$old->next_id])) ? $oldToNewRank[$old->next_id] : 0;
-                $n->save();
-            }
+            toast()->success('Cloned!', 'AA ability cloned.');
 
-            $firstOld = $ability->first_rank_id;
-            if ($firstOld && isset($oldToNewRank[$firstOld])) {
-                $new->first_rank_id = $oldToNewRank[$firstOld];
-                $new->save();
-            }
-        });
+            return redirect()->route('aa.edit', $new);
+        } catch (\Throwable $e) {
+            toast()->error('Clone failed', 'AA clone rolled back.');
 
-        return response()->json(['success' => true, 'redirect' => route('aa.edit', $new)]);
+            return redirect()->route('aa.index');
+        }
     }
 
     public function search(Request $request)
@@ -228,7 +277,7 @@ class AaAbilityController extends Controller
             ->select('id', 'name')
             ->when($search, function ($q) use ($search) {
                 $q->where('id', $search)
-                ->orWhere('name', 'like', "%{$search}%");
+                    ->orWhere('name', 'like', "%{$search}%");
             })
             ->orderBy('id')
             ->limit(50)
