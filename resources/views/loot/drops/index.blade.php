@@ -36,7 +36,10 @@
                         <tr>
                             <td>{{ $drop->id }}</td>
                             <td>
-                                <a href="{{ route('loot.drops.edit', $drop) }}" class="text-base link-accent link-hover">{{ $drop->name }}</a>
+                                <a href="{{ route('loot.drops.edit', $drop) }}"
+                                    class="text-base link-info link-hover">
+                                    {{ $drop->name }}
+                                </a>
                             </td>
                             <td>{{ $drop->entries_count ?? 0 }}</td>
                             <td>{{ $drop->loottable_entries_count ?? 0 }}</td>

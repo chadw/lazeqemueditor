@@ -33,14 +33,18 @@
             <x-slot:body>
                 @forelse ($npcSpells as $npcSpell)
                     <tr>
-                        <td>{{ $npcSpell->name }}</td>
+                        <td>
+                            <a href="{{ route('npc-spells.edit', $npcSpell) }}"
+                                class="text-base link-info link-hover">
+                                {{ $npcSpell->name }}
+                            </a>
+                        </td>
                         <td>
                             @if ($npcSpell->attackProcSpell)
                                 <x-spell-link
                                     :spell_id="$npcSpell->attackProcSpell->id"
                                     :spell_name="$npcSpell->attackProcSpell->name"
                                     :spell_icon="$npcSpell->attackProcSpell->new_icon"
-                                    spell_class="inline-flex"
                                     :effects_only="1"
                                 />
                             @else

@@ -14,7 +14,12 @@
         <x-slot:body>
             @forelse ($npc_spell_effects as $se)
                 <tr>
-                    <td>{{ $se->name }}</td>
+                    <td>
+                        <a href="{{ route('npc-spell-effects.edit', $se) }}"
+                            class="text-base link-info link-hover">
+                            {{ $se->name }}
+                        </a>
+                    </td>
                     <td>{{ $se->parent_list }}</td>
                     <td class="text-right">
                         <div class="inline join">

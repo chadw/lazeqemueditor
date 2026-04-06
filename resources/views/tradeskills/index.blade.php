@@ -41,7 +41,7 @@
                     @forelse ($recipes as $recipe)
                         <tr>
                             <td>{{ $recipe->id }}</td>
-                            <td class="font-medium">
+                            <td>
                                 <a href="{{ route('tradeskills.edit', $recipe) }}"
                                     class="text-base link-info link-hover">
                                     {{ $recipe->name }}

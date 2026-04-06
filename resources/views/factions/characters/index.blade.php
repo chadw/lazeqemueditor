@@ -36,7 +36,7 @@
                         <tr x-data data-fvalue='@json($faction)'>
                             <td>
                                 <a href="{{ route('characters.show', $faction->char_id) }}"
-                                    class="text-base link-accent link-hover">
+                                    class="text-base link-info link-hover">
                                     {{ $faction->character?->name ?? 'Unknown' }}</a>
                                 <span class="badge badge-sm badge-soft ml-1">
                                     {{ $faction->char_id }}

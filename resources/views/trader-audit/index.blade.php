@@ -31,7 +31,7 @@
                                     <span>
                                         @if($log->sellerCharacter)
                                             <a href="{{ route('characters.show', $log->sellerCharacter) }}"
-                                                class="text-base link-hover link-accent">
+                                                class="text-base link-info link-hover">
                                                 {{ $log->seller }}
                                             </a>
                                         @else
@@ -50,7 +50,7 @@
                                     <span>
                                         @if($log->buyerCharacter)
                                             <a href="{{ route('characters.show', $log->buyerCharacter) }}"
-                                                class="text-base link-hover link-accent">
+                                                class="text-base link-info link-hover">
                                                 {{ $log->buyer }}
                                             </a>
                                         @else

@@ -36,7 +36,7 @@
                             <td>{{ $dz->name }}</td>
                             <td>
                                 <a href="{{ route('characters.show', $dz->leader->id) }}"
-                                    class="text-base link-accent link-hover">
+                                    class="text-base link-info link-hover">
                                     {{ $dz->leader->name ?? '-' }}
                                 </a>
                             </td>
@@ -53,7 +53,7 @@
                             <td>{{ config('everquest.dynamic_zone_type')[$dz->type] ?? 'Unknown' }}</td>
                             <td>{{ $dz->instance_id ?? '-' }}</td>
                             <td class="text-right">
-                                <div class="inline join">
+                                <div class="join">
                                     <button type="button" class="join-item btn btn-sm btn-soft tooltip"
                                         data-tip="Edit"
                                         @click="$store.modalForm.openEdit(

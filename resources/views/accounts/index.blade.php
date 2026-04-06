@@ -33,8 +33,10 @@
                             <td>{{ $account->id }}</td>
                             <td>
                                 <div class="flex flex-col">
-                                    <span class="font-medium">{{ $account->name }}</span>
-
+                                    <a class="text-base link-info link-hover"
+                                        href="{{ route('accounts.show', $account) }}">
+                                        {{ $account->name }}
+                                    </a>
                                     @if ($account->character && $account->character->name)
                                         <span class="text-xs text-base-content/60">
                                             {{ $account->character->name }}

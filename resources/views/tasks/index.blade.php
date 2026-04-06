@@ -41,7 +41,12 @@
                     @foreach ($tasks as $task)
                         <tr>
                             <td>{{ $task->id }}</td>
-                            <td class="font-medium">{{ $task->title }}</td>
+                            <td>
+                                <a href="{{ route('tasks.edit', $task) }}"
+                                    class="text-base link-info link-hover">
+                                    {{ $task->title }}
+                                </a>
+                            </td>
                             <td class="text-center">{{ $task->min_players }} - {{ $task->max_players }}</td>
                             <td class="text-center">{{ $task->min_level }} - {{ $task->max_level }}</td>
                             <td class="text-center">{{ $task->task_activities_count }}</td>

@@ -23,12 +23,12 @@
                     <tr>
                         <td>
                             <a href="{{ route('characters.show', $entry->char_id) }}"
-                                class="text-base link-accent link-hover">{{ $entry->character?->name }}</a>
+                                class="text-base link-info link-hover">{{ $entry->character?->name }}</a>
                             <span class="badge badge-sm badge-soft ml-1">{{ $entry->char_id }}</span>
                         </td>
                         <td>
                             <a href="{{ route('tradeskills.edit', $entry->recipe_id) }}"
-                                class="text-base link-accent link-hover">{{ $entry->recipe?->name }}</a>
+                                class="text-base link-info link-hover">{{ $entry->recipe?->name }}</a>
                             <span class="badge badge-sm badge-soft ml-1">{{ $entry->recipe_id }}</span>
                         </td>
                         <td class="text-right">

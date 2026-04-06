@@ -33,7 +33,12 @@
                 @forelse($spawngroups as $sg)
                     <tr>
                         <td>{{ $sg->id }}</td>
-                        <td class="font-medium">{{ $sg->name }}</td>
+                        <td>
+                            <a href="{{ route('spawngroups.edit', $sg) }}"
+                                class="text-base link-info link-hover">
+                                {{ $sg->name }}
+                            </a>
+                        </td>
                         <td>{{ $sg->spawn_limit ?? '-' }}</td>
                         <td>{{ $sg->spawnentries_count ?? 0 }}</td>
                         <td>{{ $sg->spawn2_count ?? 0 }}</td>

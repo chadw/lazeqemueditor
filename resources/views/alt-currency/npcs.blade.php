@@ -42,7 +42,7 @@
                     <tr x-data data-altnpc='@json($anpc)'>
                         <td>{{ $anpc->id }}</td>
                         <td>
-                            <a class="text-base link-accent link-hover"
+                            <a class="text-base link-info link-hover"
                                 href="{{ route('merchants.index', [
                                     'zone' => $loc?->zoneData?->zoneidnumber ?? $loc?->zone,
                                     'v' => $loc?->version ?? 0,

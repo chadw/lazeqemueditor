@@ -49,7 +49,7 @@
                 @forelse ($spells as $spell)
                     <tr>
                         <td>{{ $spell->id }}</td>
-                        <td class="font-semibold">
+                        <td>
                             <x-spell-link
                                 :spell_id="$spell->id"
                                 :spell_name="$spell->name"

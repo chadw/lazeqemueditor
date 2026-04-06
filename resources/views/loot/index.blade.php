@@ -40,7 +40,7 @@
                             <td>{{ $table->id }}</td>
                             <td>
                                 <a href="{{ route('loot.edit', $table) }}"
-                                    class="text-base link-accent link-hover">
+                                    class="text-base link-info link-hover">
                                     {{ $table->name }}
                                 </a>
                             </td>

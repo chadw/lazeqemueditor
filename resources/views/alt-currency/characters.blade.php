@@ -47,7 +47,7 @@
                         >
                             <td>{{ $achar->char_id }}</td>
                             <td>
-                                <a class="text-base link-accent link-hover"
+                                <a class="text-base link-info link-hover"
                                     href="{{ route('characters.show', $achar->character?->id) }}">
                                     {{ $achar->character->name ?? 'Missing Character' }}
                                 </a>

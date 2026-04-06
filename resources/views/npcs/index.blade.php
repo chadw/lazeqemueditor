@@ -31,7 +31,7 @@
                         <td>{{ $npc->id }}</td>
                         <td>
                             <a href="{{ route('npcs.edit', $npc->id) }}"
-                                class="text-base link-accent link-hover">
+                                class="text-base link-info link-hover">
                                 {{ $npc->clean_name ?: ($npc->name ?? $npc->id) }}
                             </a>
                         </td>

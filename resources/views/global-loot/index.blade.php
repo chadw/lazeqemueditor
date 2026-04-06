@@ -29,7 +29,7 @@
                 <tr>
                     <th scope="col" class="w-[5%]">ID</th>
                     <th scope="col">Name</th>
-                    <th scope="col" class="w-[10%]">Loot Table ID</th>
+                    <th scope="col">Loot Table ID</th>
                     <th scope="col" class="w-[10%] text-center">Enabled</th>
                     <th scope="col" class="w-[10%] text-right">-</th>
                 </tr>
@@ -39,10 +39,18 @@
                     <tr x-data data-globalloot='@json($gloot)'>
                         <td>{{ $gloot->id }}</td>
                         <td>
-                            {{ $gloot->description }}
+                            <a href="{{ route('global-loot.edit', $gloot) }}"
+                                class="text-base link-info link-hover">
+                                {{ $gloot->description }}
+                            </a>
                         </td>
                         <td>
-                            {{ $gloot->loottable_id ?? 'N/A' }}
+                            @if(optional($gloot->loottable)->name)
+                                {{ $gloot->loottable->name }}
+                                <span class="badge badge-sm badge-soft">{{ $gloot->loottable_id }}</span>
+                            @else
+                                <span class="badge badge-sm badge-soft">{{ $gloot->loottable_id ?? 'N/A' }}</span>
+                            @endif
                         </td>
                         <td class="text-center">
                             <x-status :ok="$gloot->enabled" />

@@ -31,7 +31,7 @@
                         <tr>
                             <td>{{ $ability->id }}</td>
                             <td>
-                                <a href="{{ route('aa.edit', $ability) }}" class="text-base link-accent link-hover">
+                                <a href="{{ route('aa.edit', $ability) }}" class="text-base link-info link-hover">
                                     {{ $ability->name }}
                                 </a>
                             </td>
