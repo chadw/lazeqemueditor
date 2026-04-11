@@ -49,7 +49,8 @@
                 <table class="table table-zebra table-sm w-full">
                     <thead class="bg-base-300/50">
                         <tr>
-                            <th>Item</th>
+                            <th class="w-[5%]">Item ID</th>
+                            <th>Item Name</th>
                             <th class="w-[10%]">Chance</th>
                             <th class="w-[10%]">Charges</th>
                             <th class="w-[10%]">Equip</th>
@@ -59,6 +60,7 @@
                     <tbody>
                         @forelse($drop->entries as $entry)
                             <tr x-data data-dropentry='@json($entry)'>
+                                <td>{{ $entry->item->id }}</td>
                                 <td>
                                     @if($entry->item)
                                         <x-item-link
@@ -106,7 +108,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="text-center opacity-60">No items in this loot drop</td>
+                                <td colspan="6" class="text-center opacity-60">No items in this loot drop</td>
                             </tr>
                         @endforelse
                     </tbody>

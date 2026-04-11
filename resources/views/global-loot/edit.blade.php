@@ -176,7 +176,8 @@
                                 <table class="table table-zebra table-sm w-full">
                                     <thead class="bg-base-300/50">
                                         <tr>
-                                            <th>Item</th>
+                                            <th class="w-[5%]">Item ID</th>
+                                            <th>Item Name</th>
                                             <th class="w-[10%]">Chance</th>
                                             <th class="w-[10%]">Charges</th>
                                             <th class="w-[10%]">Equip</th>
@@ -186,7 +187,7 @@
                                     <tbody>
                                         @forelse ($entry->lootdrop->entries as $dropEntry)
                                             <tr x-data data-dropentry='@json($dropEntry)'>
-
+                                                <td>{{ $dropEntry->item->id }}</td>
                                                 <td>
                                                     <x-item-link
                                                         :item_id="$dropEntry->item->id"
@@ -195,7 +196,6 @@
                                                         item_class="flex"
                                                     />
                                                 </td>
-
                                                 <td>{{ $dropEntry->chance }}%</td>
                                                 <td>{{ $dropEntry->item_charges ?? '—' }}</td>
                                                 <td>
@@ -242,7 +242,7 @@
                                             </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="5" class="text-center opacity-60">
+                                                <td colspan="6" class="text-center opacity-60">
                                                     No items in this loot drop
                                                 </td>
                                             </tr>

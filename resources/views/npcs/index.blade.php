@@ -46,9 +46,26 @@
                         <td>{{ config('everquest.npc_class')[$npc->class] ?? 'Unknown' }}</td>
                         <td>{{ $npc->level }}</td>
                         <td class="text-right">
-                            <a class="btn btn-sm btn-soft" href="{{ route('npcs.edit', $npc->id) }}">
-                                <x-ui.icon name="edit" />
-                            </a>
+                            <div class="join">
+                                <form method="POST" action="{{ route('npcs.clone', $npc) }}" class="inline">
+                                    @csrf
+                                    <input type="hidden" name="redirect" value="edit" />
+                                    <button type="submit" class="btn btn-sm btn-soft btn-info join-item tooltip"
+                                        data-tip="Clone">
+                                        <x-ui.icon name="clone" />
+                                    </button>
+                                </form>
+                                <a class="btn btn-sm join-item btn-soft" href="{{ route('npcs.edit', $npc->id) }}">
+                                    <x-ui.icon name="edit" />
+                                </a>
+                                <form action="{{ route('npcs.destroy', $npc) }}" method="POST" class="inline">
+                                    @csrf @method('DELETE')
+                                    <button class="btn btn-sm btn-soft btn-error join-item tooltip" data-tip="Delete"
+                                        onclick="return confirm('Delete?')">
+                                        <x-ui.icon name="delete" />
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                 @empty
