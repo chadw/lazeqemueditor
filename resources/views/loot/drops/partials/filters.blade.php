@@ -5,6 +5,12 @@
 			placeholder="Loot Drop ID or Name">
 	</div>
 
+	<div class="w-60">
+		<label class="label label-text">Item</label>
+		<input type="text" name="item" value="{{ request('item') }}" class="input w-full"
+			placeholder="Item ID or Name">
+	</div>
+
 	<div class="flex items-center gap-2">
 		<label class="cursor-pointer label">
 			<input type="checkbox" name="orphan" value="1" class="checkbox" {{ request()->boolean('orphan') ? 'checked' : '' }} />

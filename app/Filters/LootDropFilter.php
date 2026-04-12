@@ -28,6 +28,18 @@ class LootDropFilter
             $query->whereDoesntHave('loottableEntries');
         }
 
+        if ($val = trim((string) $this->request->input('item', ''))) {
+            if (is_numeric($val)) {
+                $query->whereHas('entries', function ($q) use ($val) {
+                    $q->where('item_id', intval($val));
+                });
+            } else {
+                $query->whereHas('entries.item', function ($q) use ($val) {
+                    $q->where('Name', 'like', '%' . $val . '%');
+                });
+            }
+        }
+
         return $query;
     }
 }

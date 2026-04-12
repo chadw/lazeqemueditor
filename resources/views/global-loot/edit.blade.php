@@ -57,7 +57,7 @@
                             })" x-init="init()">
                                 <label class="label"><span class="label-text font-bold">Link Existing Drop</span></label>
 
-                                <form action="{{ route('loot.drops.store', $globalLoot->loottable->id) }}" method="POST"
+                                <form action="{{ route('loot.drops.link', $globalLoot->loottable->id) }}" method="POST"
                                     class="flex join w-full">
                                     @csrf
                                     <input type="hidden" name="loottable_id" value="{{ $globalLoot->loottable->id }}">

@@ -77,6 +77,80 @@
             'lt' => $npc->lootTable,
         ])
 
+        @include('loot.partials.loottable-npcs', ['bg' => 'bg-base-200', 'table' => $npc->lootTable])
+
+        <div class="card bg-base-200 border border-base-300 shadow-sm mx-auto w-full max-w-3xl">
+            <div class="card-body">
+                <h2 class="card-title">Loot Drop Management</h2>
+                <div class="flex flex-col md:flex-row items-stretch gap-2">
+                    <div class="flex-3" x-data="ajaxSelect({
+                        searchUrl: '/loot/drops/search',
+                        placeholder: 'Search existing Loot Drops...',
+                        multiple: false,
+                        required: true,
+                    })" x-init="init()">
+                        <label class="label"><span class="label-text font-bold">Link Existing Drop</span></label>
+
+                        <form action="{{ route('loot.drops.link', $npc->lootTable->id) }}" method="POST"
+                            class="flex join w-full">
+                            @csrf
+                            <input type="hidden" name="loottable_id" value="{{ $npc->lootTable->id }}">
+                            <select x-ref="select" name="lootdrop_id" class="join-item w-full" required></select>
+                            <button type="submit" class="btn btn-soft btn-primary join-item">Link</button>
+                        </form>
+                    </div>
+                    <div class="divider md:divider-horizontal">OR</div>
+                    <div class="flex-1 flex flex-col justify-end">
+                        <button type="button" class="btn btn-soft btn-success w-full"
+                            onclick="new_lootdrop_modal.showModal()">
+                            <x-ui.icon name="add" /> New Loot Drop
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <dialog id="new_lootdrop_modal" class="modal">
+            <div class="modal-box max-w-2xl">
+                <form method="dialog">
+                    <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+                </form>
+                <h3 class="text-lg font-bold">Create New Loot Drop</h3>
+                <p class="text-xs opacity-60 mb-4 italic">This drop will be automatically added to
+                    "{{ $npc->lootTable->name }}"</p>
+
+                <form action="{{ route('loot.drops.store', $npc->lootTable->id) }}" method="POST" class="space-y-4">
+                    @csrf
+                    <input type="hidden" name="loottable_id" value="{{ $npc->lootTable->id }}">
+                    <x-form.input
+                        name="name"
+                        label="Drop Name"
+                        placeholder="Ex: Global Rare Spells"
+                        required
+                    />
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <x-form.input
+                            name="mindrops"
+                            label="Min Drops"
+                            type="number"
+                            value="0"
+                        />
+                        <x-form.input
+                            name="maxdrops"
+                            label="Max Drops"
+                            type="number"
+                            value="1"
+                        />
+                    </div>
+
+                    <div class="modal-action">
+                        <button type="button" class="btn" onclick="new_lootdrop_modal.close()">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Create & Attach</button>
+                    </div>
+                </form>
+            </div>
+        </dialog>
         @include('loot.partials.lootdrops-edit', [
             'lt' => $npc->lootTable,
         ])

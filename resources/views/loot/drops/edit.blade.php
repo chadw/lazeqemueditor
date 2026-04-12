@@ -21,6 +21,10 @@
             </div>
         </div>
 
+        @if(isset($loottable) && $loottable)
+            @include('loot.partials.loottable-npcs', ['table' => $loottable])
+        @endif
+
         <div class="card bg-base-100 shadow-sm border border-base-300">
             <div class="bg-neutral text-neutral-content px-4 py-3 flex items-center justify-between">
                 <div class="flex items-center gap-3">

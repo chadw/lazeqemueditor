@@ -1,5 +1,6 @@
 @php
     $race = config('everquest.db_races')[$npc->race] ?? 'Unknown';
+    $npcClass = config('everquest.npc_class')[$npc->class] ?? 'Unknown';
     $bodytype = config('everquest.db_bodytypes')[$npc->bodytype] ?? 'Unknown';
 @endphp
 <div class="flex justify-between items-start">
@@ -12,9 +13,9 @@
         <div class="mt-2 text-sm text-gray-200">
             <table class="w-full max-w-md">
                 <x-item-stat name="Level" :stat="$npc->level" />
-                <x-item-stat name="Class" :stat="$npc->class" />
-                <x-item-stat name="Race" :stat="$race" />
-                <x-item-stat name="Body Type" :stat="$bodytype" />
+                <x-item-stat name="Class" :stat="'(' . $npc->class . ') ' . $npcClass" />
+                <x-item-stat name="Race" :stat="'(' . $npc->race . ') ' . $race" />
+                <x-item-stat name="Body Type" :stat="'(' . $npc->bodytype . ') ' . $bodytype" />
             </table>
         </div>
     </div>

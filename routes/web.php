@@ -369,6 +369,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
             ->name('entries.destroy');
 
         // loot drops
+        Route::post('drops/{loottable}/link', [LootDropController::class, 'link'])->name('drops.link');
         Route::get('drops/search', [LootDropController::class, 'search'])->name('drops.search');
         Route::get('drops', [LootDropController::class, 'index'])->name('drops.index');
         Route::post('{loottable}/drops', [LootDropController::class, 'store'])->name('drops.store');

@@ -1,9 +1,11 @@
+@php $bgClass = $bg ?? 'bg-base-100'; @endphp
+
 <div x-cloak x-data="{ open: false }" class="collapse collapse-arrow bg-base-200 rounded-box border mb-4"
     :class="open ? 'border-base-content/10' : 'border-base-100'">
     <input type="checkbox" id="loottable-{{ $table->id }}-toggle" x-model="open" />
     <label for="loottable-{{ $table->id }}-toggle"
         class="collapse-title flex items-center justify-between gap-4 border-b border-base-300 transition-colors"
-        :class="open ? 'bg-accent/20' : 'bg-base-100'">
+        :class="open ? 'bg-accent/20' : '{{ $bgClass }}'">
         <div class="flex items-center gap-4 truncate w-full">
             <span class="font-bold inline-block truncate">NPCs using this Loot Table</span>
             <span class="text-sm text-base-content/60 w-20 inline-block">

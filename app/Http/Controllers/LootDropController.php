@@ -46,7 +46,13 @@ class LootDropController extends Controller
     {
         $drop->load('entries.item');
 
-        return view('loot.drops.edit', compact('drop'));
+        $loottable = null;
+        $lte = LoottableEntry::where('lootdrop_id', $drop->id)->first();
+        if ($lte) {
+            $loottable = LootTable::with('npcs')->find($lte->loottable_id);
+        }
+
+        return view('loot.drops.edit', compact('drop', 'loottable'));
     }
 
     /**
@@ -79,6 +85,31 @@ class LootDropController extends Controller
         return back()->with('success', !empty($data['lootdrop_id'])
             ? 'Loot Drop linked successfully!'
             : 'New Loot Drop created and attached successfully!');
+    }
+
+    /**
+     * Link an existing LootDrop to a LootTable
+     *
+     * @param  \App\Models\LootTable  $loottable
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function link(LootTable $loottable, Request $request)
+    {
+        $data = $request->validate([
+            'lootdrop_id' => 'required|integer|exists:eqemu.lootdrop,id',
+        ]);
+
+        DB::connection('eqemu')->transaction(function () use ($data, $loottable) {
+            LoottableEntry::firstOrCreate([
+                'loottable_id' => $loottable->id,
+                'lootdrop_id' => $data['lootdrop_id'],
+            ]);
+
+            toast()->success('Saved!', "Loot Drop linked successfully!");
+        });
+
+        return back();
     }
 
     /**
