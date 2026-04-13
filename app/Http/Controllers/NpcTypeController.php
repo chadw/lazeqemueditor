@@ -42,19 +42,42 @@ class NpcTypeController extends Controller
         $zoneMap = [];
         foreach ($paginator as $npc) {
             $firstEntry = $npc->firstSpawnEntries ?? null;
-            if (!$firstEntry || !$firstEntry->spawn2) {
+
+            // match by spawn2 data first if available but also....
+            if ($firstEntry && $firstEntry->spawn2) {
+                $s2 = $firstEntry->spawn2;
+                $matched = $allZones->first(function ($z) use ($s2) {
+                    return $z->short_name === $s2->zone && ((int)$z->version === (int)($s2->version ?? 0));
+                });
+
+                if ($matched) {
+                    $zoneMap[$npc->id] = $matched->short_name;
+                } else {
+                    $zoneMap[$npc->id] = $s2->zone;
+                }
+
                 continue;
             }
 
-            $s2 = $firstEntry->spawn2;
-            $matched = $allZones->first(function ($z) use ($s2) {
-                return $z->short_name === $s2->zone && ((int)$z->version === (int)($s2->version ?? 0));
-            });
+            // match by the og ___ method as well.
+            $idStr = (string) ($npc->id ?? '');
+            if (strlen($idStr) > 3) {
+                $prefix = (int) substr($idStr, 0, -3);
 
-            if ($matched) {
-                $zoneMap[$npc->id] = $matched->short_name;
-            } else {
-                $zoneMap[$npc->id] = $s2->zone;
+                $matched = $allZones->first(function ($z) use ($prefix) {
+                    return (int)$z->zoneidnumber === $prefix && (int)$z->version === 0;
+                });
+
+                if (!$matched) {
+                    $matched = $allZones->first(function ($z) use ($prefix) {
+                        return (int)$z->zoneidnumber === $prefix;
+                    });
+                }
+
+                if ($matched) {
+                    $zoneMap[$npc->id] = $matched->short_name;
+                    continue;
+                }
             }
         }
 

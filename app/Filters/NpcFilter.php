@@ -82,9 +82,19 @@ class NpcFilter
         $zoneShort = $zone->short_name;
         $version = (int) $this->request->input('version', 0);
 
-        $this->builder->whereHas('spawnEntries.spawn2', function ($q) use ($zoneShort, $version) {
-            $q->where('zone', $zoneShort)
-                ->when($version > 0, fn($qq) => $qq->where('version', $version));
+        $zoneId = (int) $zone->zoneidnumber;
+
+        // we need to match by spawn2 zone and by og ___ method.
+        $this->builder->where(function ($q) use ($zoneShort, $version, $zoneId) {
+            $q->whereHas('spawnEntries.spawn2', function ($qq) use ($zoneShort, $version) {
+                $qq->where('zone', $zoneShort)
+                    ->when($version > 0, fn($q2) => $q2->where('version', $version));
+            });
+
+            $q->orWhere(function ($sub) use ($zoneId) {
+                $sub->whereRaw('CAST(SUBSTRING(id, 1, LENGTH(id) - 3) AS UNSIGNED) = ?', [$zoneId])
+                    ->whereDoesntHave('spawnEntries');
+            });
         });
     }
 

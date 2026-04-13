@@ -32,7 +32,7 @@
                         <td>
                             <a href="{{ route('npcs.edit', $npc->id) }}"
                                 class="text-base link-info link-hover">
-                                {{ $npc->clean_name ?: ($npc->name ?? $npc->id) }}
+                                {{ $npc->name ?: ('empty' ?? $npc->id) }}
                             </a>
                         </td>
                         <td>

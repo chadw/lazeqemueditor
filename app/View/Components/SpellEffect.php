@@ -427,19 +427,25 @@ class SpellEffect extends Component
                     $desc .= 'Summon Player';
                     break;
                 case 83: //TODO teleport zone long enum ?
-                    $zone = $this->allZones[strtolower($spell['teleport_zone'])];
+                    $targetZone = strtolower(trim($spell['teleport_zone'] ?? ''));
+                    $zone = null;
+
+                    if ($targetZone !== '' && isset($this->allZones[$targetZone])) {
+                        $zone = $this->allZones[$targetZone];
+                    }
+
                     $coords = [
                         'x' => $spell['effect_base_value' . ($n)],
                         'y' => $spell['effect_base_value' . ($n + 1)],
                         'z' => $spell['effect_base_value' . ($n + 2)],
                     ];
                     $coords = implode(', ', $coords);
-
                     $desc .= 'Teleport to (' . $coords . ') in ';
+
                     if ($zone) {
                         $desc .= '<a href="/zones/' . $zone->id . '" class="link-accent link-hover">' . $zone->long_name . '</a>';
                     } else {
-                        $desc .= $spell['teleport_zone'];
+                        $desc .= 'Unknown Zone (' . ($targetZone ?: 'Empty') . ')';
                     }
                     break;
                 case 84:
@@ -457,15 +463,20 @@ class SpellEffect extends Component
                     $desc .= $this->getFormatStandard('Magnification', '%', $value_min, $value_max, $minlvl, $maxlvl);
                     break;
                 case 88:
-                    if ($spell['teleport_zone'] !== 'same') {
-                        $zone = $this->allZones[strtolower($spell['teleport_zone'])];
+                    $targetZone = strtolower(trim($spell['teleport_zone'] ?? ''));
+
+                    if ($targetZone !== '' && $targetZone !== 'same' && isset($this->allZones[$targetZone])) {
+                        $zone = $this->allZones[$targetZone];
+
                         $coords = [
                             'x' => $spell['effect_base_value' . ($n)],
                             'y' => $spell['effect_base_value' . ($n + 1)],
                             'z' => $spell['effect_base_value' . ($n + 2)],
                         ];
+
                         $coords = implode(', ', $coords);
-                        $desc .= 'Evacuate to (' . $coords . ') in ' . $zone->long_name;
+                        $desc .= 'Evacuate to (' . $coords . ') in ';
+                        $desc .= '<a href="/zones/' . $zone->id . '" class="link-accent link-hover">' . $zone->long_name . '</a>';
                     } else {
                         $desc .= 'Evacuate to safe point in zone';
                     }
@@ -535,15 +546,20 @@ class SpellEffect extends Component
                     $desc .= 'Summon Pet to Player';
                     break;
                 case 104:
-                    if ($spell['teleport_zone'] !== '') {
-                        $zone = $this->allZones[strtolower($spell['teleport_zone'])];
+                    $targetZone = $spell['teleport_zone'] ?? '';
+                    $tzKey = strtolower(trim($targetZone));
+
+                    if ($tzKey !== '' && isset($this->allZones[$tzKey])) {
+                        $zone = $this->allZones[$tzKey];
+
                         $coords = [
                             'x' => $spell['effect_base_value' . ($n)],
                             'y' => $spell['effect_base_value' . ($n + 1)],
                             'z' => $spell['effect_base_value' . ($n + 2)],
                         ];
                         $coords = implode(', ', $coords);
-                        $desc .= 'Translocate to (' . $coords . ') in ' . $zone->long_name;
+                        $desc .= 'Translocate to (' . $coords . ') in ';
+                        $desc .= '<a href="/zones/' . $zone->id . '" class="link-accent link-hover">' . $zone->long_name . '</a>';
                     } else {
                         $desc .= 'Translocate to bind';
                     }

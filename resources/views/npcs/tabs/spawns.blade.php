@@ -10,17 +10,25 @@
                         <h3 class="font-bold text-sm">
                             Coordinates:
                             <span class="text-secondary font-mono ml-1">
-                                {{ floor($spawn->spawn2->x) }}, {{ floor($spawn->spawn2->y) }}, {{ floor($spawn->spawn2->z) }}
+                                @if ($spawn->spawn2)
+                                    {{ floor($spawn->spawn2->x) }}, {{ floor($spawn->spawn2->y) }}, {{ floor($spawn->spawn2->z) }}
+                                @else
+                                    —
+                                @endif
                             </span>
                         </h3>
                     </div>
 
                     <div class="flex gap-4 items-center text-xs uppercase tracking-wider font-bold opacity-80">
-                        <div class="flex items-center gap-1">
+                            <div class="flex items-center gap-1">
                             <x-ui.icon name="clock" />
-                            Respawn: <span class="badge badge-sm badge-soft">{{ seconds_to_human($spawn->spawn2->respawntime) }}</span>
-                            @if ($spawn->spawn2->variance > 0)
-                                <span class="text-accent">+/- {{ seconds_to_human($spawn->spawn2->variance) }}</span>
+                            @if ($spawn->spawn2)
+                                Respawn: <span class="badge badge-sm badge-soft">{{ seconds_to_human($spawn->spawn2->respawntime) }}</span>
+                                @if (($spawn->spawn2->variance ?? 0) > 0)
+                                    <span class="text-accent">+/- {{ seconds_to_human($spawn->spawn2->variance) }}</span>
+                                @endif
+                            @else
+                                Respawn: <span class="badge badge-sm badge-ghost">—</span>
                             @endif
                         </div>
                     </div>
@@ -36,7 +44,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @if ($spawn->spawn2->npcs)
+                            @if ($spawn->spawn2 && $spawn->spawn2->npcs)
                                 @foreach ($spawn->spawn2->npcs as $phs)
                                     <tr class="{{ $npc->id == $phs->id ? 'bg-info/10 font-bold' : '' }}"
                                         x-data
@@ -133,7 +141,7 @@
                             <x-ui.icon name="add" /> Add NPC
                         </button>
                         @php
-                            $spZone = $spawn->spawn2->zone ?? ($spawn->spawnGroup->spawn2->first()->zone ?? 'unknown');
+                            $spZone = optional($spawn->spawn2)->zone ?? optional($spawn->spawnGroup->spawn2->first())->zone ?? 'unknown';
                         @endphp
                         <button type="button" class="btn btn-xs btn-soft btn-success"
                             @click="$store.modalForm.openCreate({
