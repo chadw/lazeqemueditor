@@ -188,6 +188,7 @@ class CharacterController extends Controller
 
             $character->update([
                 'zone_id' => $data['zone_id'],
+                'zone_instance' => 0,
                 'x' => $zone->safe_x ?? $character->x ?? 0,
                 'y' => $zone->safe_y ?? $character->y ?? 0,
                 'z' => $zone->safe_z ?? $character->z ?? 0,

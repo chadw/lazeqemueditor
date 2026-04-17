@@ -25,7 +25,7 @@
     <div class="flex justify-between items-start">
         <h1 class="text-2xl font-bold">{{ $spell->name }}</h1>
         <div
-            class="spell-icon spell-{{ $spell->new_icon }} rounded-lg {{ config('everquest.spell_target_colors.' . $spell->targetype, '') }}">
+            class="spell-icon spell-{{ $spell->new_icon }} rounded-lg {{ config('everquest.spell_target_colors.' . $spell->targettype, '') }}">
         </div>
     </div>
 
