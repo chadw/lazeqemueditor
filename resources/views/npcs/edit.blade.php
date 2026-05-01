@@ -98,6 +98,7 @@
 
         @include('partials.modal-idpicker')
         @include('partials.modal-objects')
+        @include('npcs.partials.race-model-picker')
 
     @endif
 @endsection

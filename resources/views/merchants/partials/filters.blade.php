@@ -1,14 +1,19 @@
 <form method="GET" action="{{ route('merchants.index') }}" class="flex gap-2 items-end">
     <div class="w-72">
-        <label class="label label-text">Merchant id or name</label>
+        <label class="label label-text">Merchant</label>
         <input name="merchant" value="{{ request()->get('merchant') }}" class="input w-full"
-            placeholder="ID or name..." />
+            placeholder="Merchant id or name" />
+    </div>
+    <div class="w-54">
+        <label class="label label-text">Item</label>
+        <input name="item" value="{{ request()->get('item') }}" class="input w-full"
+            placeholder="Item id or name" />
     </div>
     <div class="flex gap-2">
         <button type="submit" class="btn btn-soft btn-success">
             Filter
         </button>
-        @if (request()->hasAny(['merchant']))
+        @if (request()->hasAny(['merchant', 'item']))
             <a href="{{ url()->current() }}" class="btn btn-soft btn-error">
                 Reset
             </a>

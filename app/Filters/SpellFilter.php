@@ -44,7 +44,14 @@ class SpellFilter
 
     protected function name($value)
     {
-        $this->builder->where('name', 'like', "%{$value}%");
+        $v = trim((string) $value);
+
+        if (preg_match('/^\d+$/', $v)) {
+            $this->builder->where('id', (int) $v);
+            return;
+        }
+
+        $this->builder->where('name', 'like', "%{$v}%");
     }
 
     protected function level($value)

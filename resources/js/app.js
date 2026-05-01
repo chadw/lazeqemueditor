@@ -3375,6 +3375,8 @@ Alpine.data('npcSelector', (init) => ({
     versions: Array.isArray(init.versions) ? init.versions : [],
     results: [],
     loading: false,
+    selectedClassName: null,
+    selectedRaceId: null,
     selectedNpc: (init && init.npc) ? (typeof init.npc === 'object' ? Number(init.npc.id) : Number(init.npc)) : null,
     _initRun: false,
 
@@ -4464,6 +4466,134 @@ Alpine.store('modalForm', {
             this.saving = false;
         }
     }
+});
+
+Alpine.store('raceModelPicker', {
+    isOpen: false,
+    grouped: [],
+    loading: false,
+
+    load() {
+        if (this.loading) return;
+        this.loading = true;
+
+        const models = [];
+
+        for (const sheet of Array.from(document.styleSheets)) {
+            try {
+                const rules = sheet.cssRules || sheet.rules || [];
+                for (const rule of Array.from(rules)) {
+                    if (!rule.selectorText) continue;
+                    const selectors = rule.selectorText.split(',');
+                    for (let sel of selectors) {
+                        sel = sel.trim();
+                        if (!sel.startsWith('.race-model-')) continue;
+                        const cls = sel.replace(/^\./, '').split(':')[0];
+                        const parts = cls.replace('race-model-', '').split('-');
+                        if (parts.length >= 4) {
+                            const race = parseInt(parts[0], 10);
+                            const gender = parseInt(parts[1], 10);
+                            const texture = parseInt(parts[2], 10);
+                            const helm = parseInt(parts[3], 10);
+                            models.push({ className: cls, race, gender, texture, helm });
+                        }
+                    }
+                }
+            } catch (e) {
+                continue;
+            }
+        }
+
+        const raceMap = window.raceNames || {};
+        const grouped = {};
+        models.forEach(m => {
+            if (!grouped[m.race]) {
+                grouped[m.race] = { raceId: m.race, label: (raceMap[m.race] ? `${raceMap[m.race]} (${m.race})` : `Race ${m.race}`), items: [] };
+            }
+            grouped[m.race].items.push(m);
+        });
+
+        this.grouped = Object.values(grouped).sort((a, b) => a.raceId - b.raceId);
+        this.loading = false;
+    },
+
+    select(m) {
+        try {
+            this.selectedClassName = m.className;
+            this.selectedRaceId = m.race;
+        } catch (e) {
+        }
+        const setVal = (name, val) => {
+            const el = document.querySelector(`[name="${name}"]`);
+            if (!el) return;
+            el.value = val;
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+        };
+
+        setVal('race', m.race);
+        setVal('gender', m.gender);
+        setVal('texture', m.texture);
+        setVal('helmtexture', m.helm);
+
+        this.close();
+    },
+
+    _highlightFromInputs() {
+        try {
+            const raceEl = document.querySelector('[name="race"]');
+            const genderEl = document.querySelector('[name="gender"]');
+            const textureEl = document.querySelector('[name="texture"]');
+            const helmEl = document.querySelector('[name="helmtexture"]');
+
+            const raceId = raceEl ? Number(raceEl.value) : null;
+            const gender = genderEl ? Number(genderEl.value) : null;
+            const texture = textureEl ? Number(textureEl.value) : null;
+            const helm = helmEl ? Number(helmEl.value) : null;
+
+            if (!raceId) {
+                this.selectedRaceId = null;
+                this.selectedClassName = null;
+                return;
+            }
+
+            this.selectedRaceId = raceId;
+
+            const group = (this.grouped || []).find(g => Number(g.raceId) === Number(raceId));
+            if (!group) {
+                this.selectedClassName = null;
+                return;
+            }
+
+            const match = (group.items || []).find(it => Number(it.gender) === Number(gender) && Number(it.texture) === Number(texture) && Number(it.helm) === Number(helm));
+            this.selectedClassName = match ? match.className : null;
+        } catch (e) {
+            console.warn('raceModelPicker._highlightFromInputs error', e);
+        }
+    },
+
+    open() {
+        this.isOpen = true;
+        if (!this.grouped || this.grouped.length === 0) {
+            this.load();
+        }
+        setTimeout(() => {
+            this._highlightFromInputs();
+            try {
+                if (this.selectedRaceId) {
+                    const el = document.querySelector(`[data-race-id="${this.selectedRaceId}"]`);
+                    if (el && typeof el.scrollIntoView === 'function') {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+                    }
+                }
+            } catch (e) {
+            }
+        }, 60);
+    },
+
+    close() {
+        this.isOpen = false;
+    },
 });
 
 Alpine.store('rankSaver', {

@@ -34,6 +34,22 @@ class MerchantFilter
             }
         }
 
+        if ($ival = trim((string) $this->request->input('item', ''))) {
+            if (is_numeric($ival)) {
+                $int = intval($ival);
+                $query->where(function (Builder $q) use ($int) {
+                    $q->where('item', $int)
+                      ->orWhereHas('items', function (Builder $qq) use ($int) {
+                          $qq->where('id', $int);
+                      });
+                });
+            } else {
+                $query->whereHas('items', function (Builder $q) use ($ival) {
+                    $q->where('Name', 'like', '%' . $ival . '%');
+                });
+            }
+        }
+
         return $query;
     }
 }

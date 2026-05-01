@@ -61,14 +61,28 @@
                     max="255"
                     :value="$npc->maxlevel"
                 />
-                <x-form.select
-                    name="race"
-                    label="Race"
-                    :options="config('everquest.db_races')"
-                    :selected="$npc->race"
-                    keyInOption="true"
-                    wrapper-class="col-span-2"
-                />
+                <div class="col-span-2 form-control w-full">
+                    <label class="label">
+                        <span class="label-text">Race</span>
+                    </label>
+                    <div x-data class="join w-full">
+                        <x-form.select
+                            name="race"
+                            label=""
+                            :options="config('everquest.db_races')"
+                            :selected="$npc->race"
+                            keyInOption="true"
+                            wrapper-class="col-span-2"
+                        />
+                        <button
+                            type="button"
+                            class="btn btn-soft btn-secondary join-item flex-none"
+                            @click='$store.raceModelPicker.open()'
+                        >
+                            Pick
+                        </button>
+                    </div>
+                </div>
                 <x-form.select
                     name="class"
                     label="Class"
@@ -116,6 +130,7 @@
             </div>
         </div>
     </div>
+
     <div class="card bg-base-200 card-sm shadow-sm">
         <div class="card-body">
             <h2 class="card-title">Vitals</h2>

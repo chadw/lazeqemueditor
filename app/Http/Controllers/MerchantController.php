@@ -67,7 +67,7 @@ class MerchantController extends Controller
             }
         }
 
-        if (trim((string) $request->input('merchant', '')) !== '') {
+        if (trim((string) $request->input('merchant', '')) !== '' || trim((string) $request->input('item', '')) !== '') {
             $lists = (new MerchantFilter($request))
                 ->apply(Merchantlist::with('npc'))
                 ->get();

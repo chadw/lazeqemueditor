@@ -32,6 +32,7 @@
                     label="Status"
                     :options="config('everquest.account_status')"
                     :selected="$account->status"
+                    keyInOption="true"
                 />
                 <x-form.select
                     name="flymode"
