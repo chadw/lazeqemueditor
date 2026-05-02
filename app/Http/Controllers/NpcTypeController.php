@@ -292,8 +292,25 @@ class NpcTypeController extends Controller
             }
         });
 
-        return redirect()
-            ->route('npcs.edit', $npc->id)
+        $params = collect($request->only(['zone', 'v']))
+            ->filter(fn ($v) => $v !== null && $v !== '')
+            ->all();
+
+        if (empty($params)) {
+            $referer = $request->headers->get('referer') ?? url()->previous();
+            if ($referer) {
+                $parts = parse_url($referer);
+                if (!empty($parts['path']) && str_ends_with($parts['path'], "/npcs/{$npc->id}/edit") && !empty($parts['query'])) {
+                    parse_str($parts['query'], $qp);
+                    $params = array_filter([
+                        'zone' => $qp['zone'] ?? null,
+                        'v' => $qp['v'] ?? null,
+                    ], fn ($v) => $v !== null && $v !== '');
+                }
+            }
+        }
+
+        return redirect()->route('npcs.edit', array_merge(['npc' => $npc->id], $params))
             ->with('status', count($changes) ? 'NPC updated' : 'No changes detected');
     }
 

@@ -133,6 +133,23 @@
                 </div>
             </div>
         </div>
+        <div class="card bg-base-200 card-sm shadow-sm">
+            <div class="card-body">
+                <div class="flex items-center justify-between border-b border-base-300 pb-2 mb-4">
+                    <h2 class="card-title">Experience</h2>
+                    <span class="text-xs text-base-content/50 uppercase"></span>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <x-form.input
+                        name="exp_mod"
+                        label="Exp Modifier"
+                        type="number"
+                        min="0"
+                        :value="$npc->exp_mod"
+                    />
+                </div>
+            </div>
+        </div>
     </div>
     <div class="grid grid-cols-1 gap-4">
         @include('npcs.partials.special_abilities')
