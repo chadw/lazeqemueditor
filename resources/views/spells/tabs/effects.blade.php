@@ -40,6 +40,15 @@
     </div>
     <div class="card bg-base-200 card-sm shadow-sm">
         <div class="card-body">
+            <template x-for="i in Array.from({length:12}, (_,k) => k+1)" :key="i">
+                <template x-if="!activeEffects.includes(i)">
+                    <input type="hidden" :name="`effectid${i}`" :value="(spellValues[i] && spellValues[i].effectid) || 254" />
+                    <input type="hidden" :name="`effect_base_value${i}`" :value="(spellValues[i] && spellValues[i].effect_base_value) || 0" />
+                    <input type="hidden" :name="`effect_limit_value${i}`" :value="(spellValues[i] && spellValues[i].effect_limit_value) || 0" />
+                    <input type="hidden" :name="`max${i}`" :value="(spellValues[i] && spellValues[i].max) || 0" />
+                    <input type="hidden" :name="`formula${i}`" :value="(spellValues[i] && spellValues[i].formula) || 0" />
+                </template>
+            </template>
             <div class="grid grid-cols-[30px_1fr_1fr_1fr_100px_140px] gap-1 p-2 rounded font-semibold border-b border-base-content/10">
                 <div>#</div>
                 <div>Effect</div>
@@ -276,33 +285,33 @@
         <template x-if="selectedTargetType() === 'zones'">
             <input type="text" :name="`teleport_zone`"
                 :value="(spellValues[selectedIndex] && spellValues[selectedIndex].teleport_zone) || teleport_zone || ''"
-                readonly lpignore="true" class="input w-64" @click="openSelectorForSelected()" placeholder="Select zone" />
+                readonly lpignore="true" class="input w-64" @mousedown="openSelectorForSelected()" @click="openSelectorForSelected()" placeholder="Select zone" />
         </template>
 
         {{-- pets --}}
         <template x-if="selectedTargetType() === 'pets'">
             <input type="text" :name="`teleport_zone`"
                 :value="(spellValues[selectedIndex] && spellValues[selectedIndex].teleport_zone) || teleport_zone || ''"
-                readonly lpignore="true" class="input w-64" @click="openSelectorForSelected()" placeholder="Select pet" />
+                readonly lpignore="true" class="input w-64" @mousedown="openSelectorForSelected()" @click="openSelectorForSelected()" placeholder="Select pet" />
         </template>
 
         {{-- mounts --}}
         <template x-if="selectedTargetType() === 'horses'">
             <input type="text" :name="`teleport_zone`"
                 :value="(spellValues[selectedIndex] && spellValues[selectedIndex].teleport_zone) || teleport_zone || ''"
-                readonly lpignore="true" class="input w-64" @click="openSelectorForSelected()" placeholder="Select Mount" />
+                readonly lpignore="true" class="input w-64" @mousedown="openSelectorForSelected()" @click="openSelectorForSelected()" placeholder="Select Mount" />
         </template>
 
         {{-- aura? --}}
         <template x-if="selectedTargetType() === 'auras'">
             <input type="text" :name="`teleport_zone`"
                 :value="(spellValues[selectedIndex] && spellValues[selectedIndex].teleport_zone) || teleport_zone || ''"
-                readonly lpignore="true" class="input w-64" @click="openSelectorForSelected()" placeholder="Select Aura" />
+                readonly lpignore="true" class="input w-64" @mousedown="openSelectorForSelected()" @click="openSelectorForSelected()" placeholder="Select Aura" />
         </template>
         {{-- default --}}
         <template x-if="!selectedTargetType()">
             <input id="teleport_zone_global" name="teleport_zone" type="text" x-model="teleport_zone"
-                :readonly="!isSpecial(selectedIndex)" @click="isSpecial(selectedIndex) && openSelectorForSelected()"
+                :readonly="!isSpecial(selectedIndex)" @mousedown="isSpecial(selectedIndex) && openSelectorForSelected()" @click="isSpecial(selectedIndex) && openSelectorForSelected()"
                 lpignore="true" class="input w-64" placeholder="Teleport Zone" />
         </template>
     </div>

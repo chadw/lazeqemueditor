@@ -62,19 +62,19 @@
                     name="no_partial_resist"
                     label="No Partial Resists"
                     tooltip="Spells can not do partial damage."
-                    :checked="$spell->no_partial_resist"
+                    :checked="((int) ($spell->no_partial_resist ?? 0)) === 1"
                 />
                 <x-form.checkbox
                     name="reflectable"
                     label="Reflectable"
                     tooltip="Allow this spell to be reflected back at caster."
-                    :checked="$spell->reflectable"
+                    :checked="((int) ($spell->reflectable ?? 0)) === 1"
                 />
                 <x-form.checkbox
                     name="field160"
                     label="Feedbackable"
                     tooltip="Allow this spell to be affected by spell damage shields."
-                    :checked="$spell->field160"
+                    :checked="((int) ($spell->field160 ?? 0)) === 1"
                 />
             </div>
         </div>

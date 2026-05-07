@@ -791,6 +791,18 @@ Alpine.data('spellEffects', () => {
                 if (this.selectedIndex === i) {
                     this.selectedIndex = this.activeEffects.length ? this.activeEffects[0] : null;
                 }
+                // mark the slot as blank so server can clear it on save
+                try {
+                    if (!this.spellValues) this.spellValues = {};
+                    this.spellValues[i] = {
+                        effectid: 254,
+                        effect_base_value: 0,
+                        effect_limit_value: 0,
+                        max: 0,
+                        formula: 0,
+                        teleport_zone: '',
+                    };
+                } catch (e) {}
                 return;
             }
 
@@ -4110,7 +4122,9 @@ Alpine.store('iconPicker', {
                 }
                 this.initialized = true;
             }
-            this.applyFilter();
+            this.applyFilter().then(() => {
+                this.scrollToSelectedIcon();
+            });
         }, 0);
     },
 
@@ -4133,15 +4147,83 @@ Alpine.store('iconPicker', {
         this.close();
     },
 
-    applyFilter() {
+    async applyFilter() {
         if (!this.filter) {
             this.filteredIcons = this.icons;
-        } else {
-            const q = this.filter.toLowerCase();
-            this.filteredIcons = this.icons.filter(id => id.includes(q));
+            this.startIndex = 0;
+            this.updateVisibleIcons();
+            return;
         }
+
+        const q = this.filter.trim();
+
+        if (/^\d+$/.test(q)) {
+            this.filteredIcons = this.icons.filter(id => id.includes(q));
+            this.startIndex = 0;
+            this.updateVisibleIcons();
+            return;
+        }
+
+        try {
+            const resp = await fetch(`/items/search?q=${encodeURIComponent(q)}`);
+            if (resp.ok) {
+                const items = await resp.json();
+                const iconsFromItems = Array.isArray(items)
+                    ? items.map(i => i.icon).filter(x => x !== null && x !== undefined).map(String)
+                    : [];
+
+                const seen = new Set();
+                const merged = [];
+
+                for (const id of iconsFromItems) {
+                    if (!seen.has(id)) { seen.add(id); merged.push(id); }
+                }
+
+                for (const id of this.icons) {
+                    if (!seen.has(id) && id.includes(q.toLowerCase())) {
+                        seen.add(id); merged.push(id);
+                    }
+                }
+
+                this.filteredIcons = merged;
+            } else {
+                const lq = q.toLowerCase();
+                this.filteredIcons = this.icons.filter(id => id.includes(lq));
+            }
+        } catch (e) {
+            const lq = q.toLowerCase();
+            this.filteredIcons = this.icons.filter(id => id.includes(lq));
+        }
+
         this.startIndex = 0;
         this.updateVisibleIcons();
+    },
+
+    scrollToSelectedIcon() {
+        const input = document.getElementById(this.selectedInput);
+        if (!input) return;
+        const val = String(input.value || '').trim();
+        if (!val) return;
+
+        const idx = this.filteredIcons.indexOf(val);
+        if (idx === -1) return;
+
+        const half = Math.floor(this.maxVisible / 2) || 10;
+        this.startIndex = Math.max(0, idx - half);
+        this.updateVisibleIcons();
+
+        setTimeout(() => {
+            const modal = document.getElementById('icon-picker-modal');
+            if (!modal) return;
+            const container = modal.parentElement.querySelector('.modal-box > div.grid');
+            if (!container) return;
+
+            const btn = container.querySelector(`button[title="${val}"]`) || container.querySelector(`.item-icon.item-${val}`)?.closest('button');
+            if (btn) {
+                const offset = btn.offsetTop - (container.clientHeight / 2) + (btn.clientHeight / 2);
+                container.scrollTop = Math.max(0, offset);
+            }
+        }, 0);
     },
 
     updateVisibleIcons() {
