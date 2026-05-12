@@ -651,8 +651,10 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::prefix('zones')->name('zones.')->group(function () {
         Route::get('/', [ZoneController::class, 'index'])->name('index');
         Route::get('{zone}/edit', [ZoneController::class, 'edit'])->name('edit');
+        Route::post('{zone}/clone', [ZoneController::class, 'clone'])->name('clone');
         Route::match(['put', 'patch'], '{zone}', [ZoneController::class, 'update'])->name('update');
         Route::get('/options', [ZoneController::class, 'options'])->name('options');
+        Route::get('/search', [ZoneController::class, 'search'])->name('search');
 
         Route::prefix('graveyards')->name('graveyards.')->group(function () {
             Route::get('/', [GraveyardController::class, 'index'])->name('index');

@@ -10,6 +10,7 @@ use App\Models\Zone;
 use App\Support\ObjectSprite;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use App\Services\ZoneCloner;
 
 class ZoneController extends Controller
 {
@@ -90,6 +91,26 @@ class ZoneController extends Controller
         ]);
     }
 
+    public function clone(Request $request, Zone $zone, ZoneCloner $cloner)
+    {
+        if ($request->input('export') === 'sql') {
+            $sql = $cloner->generateSql($zone);
+
+            $short = $zone->short_name;
+            $filename = "zone-clone-{$short}-v" . (Zone::where('zoneidnumber', $zone->zoneidnumber)->max('version') + 1) . ".sql";
+
+            return response()->streamDownload(function () use ($sql) {
+                echo $sql;
+            }, $filename, [
+                'Content-Type' => 'application/sql',
+            ]);
+        }
+
+        $newZone = $cloner->cloneZone($zone);
+
+        return redirect()->route('zones.edit', ['zone' => $newZone->id]);
+    }
+
     public function update(ZoneRequest $request, Zone $zone)
     {
         $data = $request->validated();
@@ -104,5 +125,35 @@ class ZoneController extends Controller
     public function options(): Collection
     {
         return Zone::zoneOptions();
+    }
+
+    public function search(Request $request)
+    {
+        $q = (string) $request->query('q', '');
+
+        $query = Zone::query()
+            ->select('zoneidnumber as id', 'short_name as name', 'long_name')
+            ->groupBy('zoneidnumber', 'short_name', 'long_name')
+            ->orderBy('short_name');
+
+        if ($q !== '') {
+            $like = '%' . $q . '%';
+            if (is_numeric($q)) {
+                $query->where('zoneidnumber', (int) $q);
+            }
+            $query->orWhere('short_name', 'like', $like)
+                  ->orWhere('long_name', 'like', $like);
+        }
+
+            $results = $query->limit(200)->get();
+
+            return response()->json($results->map(function ($r) {
+                $short = $r->name ?? ($r->short_name ?? '');
+                $long = $r->long_name ?? '';
+                return [
+                    'id' => $r->id,
+                    'name' => trim($short . ' - ' . $long),
+                ];
+            })->values());
     }
 }

@@ -113,7 +113,8 @@ class TaskController extends Controller
         $task->taskActivities->each(function($activity) use ($npcs, $items, $zones) {
             $activity->setRelation('npcs', $npcs->only(explode('|', $activity->npc_match_list)));
             $activity->setRelation('items', $items->only(explode('|', $activity->item_id_list)));
-            $activity->setRelation('zones', $zones->only(explode('|', $activity->zones)));
+            $zoneSep = strpos($activity->zones ?? '', ';') !== false ? ';' : '|';
+            $activity->setRelation('zones', $zones->only(explode($zoneSep, $activity->zones)));
         });
 
         $altCurrency = AlternateCurrency::allAltCurrency()
@@ -287,7 +288,8 @@ class TaskController extends Controller
 
         $coll = collect($activities)->flatMap(function ($act) use ($field) {
             $raw = (string) ($act->{$field} ?? '');
-            return explode('|', $raw);
+            $sep = $field === 'zones' ? ';' : '|';
+            return explode($sep, $raw);
         })->filter()->map(fn($v) => (int) $v)->unique()->values();
 
         return $coll->all();

@@ -8,6 +8,22 @@
             <x-slot name="left">
                 @include('zones.partials.filters')
             </x-slot>
+            <x-slot name="right">
+                @if ($zone)
+                    <div class="flex gap-2">
+                        <form method="POST" action="{{ route('zones.clone', ['zone' => $zone->id]) }}" onsubmit="return confirm('Clone this zone and its spawns?');">
+                            @csrf
+                            <button type="submit" class="btn btn-warning">Clone Zone</button>
+                        </form>
+
+                        <form method="POST" action="{{ route('zones.clone', ['zone' => $zone->id]) }}" onsubmit="return confirm('Export SQL for cloning this zone?');">
+                            @csrf
+                            <input type="hidden" name="export" value="sql" />
+                            <button type="submit" class="btn btn-outline">Export SQL</button>
+                        </form>
+                    </div>
+                @endif
+            </x-slot>
         </x-top-links>
 
         @if ($zone)

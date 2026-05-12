@@ -35,7 +35,8 @@ class TaskActivityRequest extends BaseRequest
             'max_z' => 'numeric|nullable',
             'skill_list' => 'string|max:64|nullable',
             'spell_list' => 'string|max:64|nullable',
-            'zones' => 'string|max:64|nullable',
+            'zones' => 'array|nullable',
+            'zones.*' => 'numeric',
             'zone_version' => 'integer|nullable',
             'optional' => 'integer|nullable',
             'list_group' => 'integer|nullable',
@@ -59,6 +60,10 @@ class TaskActivityRequest extends BaseRequest
 
         if (isset($validated['item_id_list']) && is_array($validated['item_id_list'])) {
             $validated['item_id_list'] = implode('|', $validated['item_id_list']);
+        }
+
+        if (isset($validated['zones']) && is_array($validated['zones'])) {
+            $validated['zones'] = implode(';', $validated['zones']);
         }
 
         return $validated;
@@ -99,6 +104,23 @@ class TaskActivityRequest extends BaseRequest
                 $npcArr = [];
             }
             $this->merge(['npc_match_list' => $npcArr]);
+        }
+
+        // Normalize zones input so validator accepts arrays when client sends '0' or semicolon-separated strings
+        $zones = $this->input('zones');
+        if (!is_array($zones)) {
+            if (is_null($zones) || $zones === '' || $zones === '0') {
+                $zonesArr = [];
+            } elseif (is_string($zones)) {
+                if (strpos($zones, ';') !== false) {
+                    $zonesArr = array_values(array_filter(explode(';', $zones), fn($v) => $v !== ''));
+                } else {
+                    $zonesArr = [$zones];
+                }
+            } else {
+                $zonesArr = [];
+            }
+            $this->merge(['zones' => $zonesArr]);
         }
 
         $items = $this->input('item_id_list');

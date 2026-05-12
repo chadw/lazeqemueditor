@@ -10,9 +10,9 @@ use App\Http\Requests\TaskActivityRequest;
 
 class TaskActivityController extends Controller
 {
-    public function store(Task $task, Request $request)
+    public function store(Task $task, TaskActivityRequest $request)
     {
-        $data = $request->all();
+        $data = $request->validated();
         $data['taskid'] = $task->id;
 
         $maxActivityId = TaskActivity::where('taskid', $task->id)->max('activityid') ?? -1;
@@ -38,8 +38,6 @@ class TaskActivityController extends Controller
             'data'    => $activity->fresh(),
             'redirect'=> url()->previous(),
         ], 200);
-
-        return response()->json($activity);
     }
 
     public function destroy(Task $task, $activity)

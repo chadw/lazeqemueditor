@@ -77,10 +77,11 @@
                 <div
                     x-data='ajaxSelect({
                         searchUrl: "/zones/search",
-                        prefillValue: () => $store.modalForm.form.zones ?? null,
+                        prefillValue: () => $store.modalForm.form.zone ?? null,
                         allowNone: true,
                         noneId: 0,
                         multiple: true,
+                        delimiter: ";",
                     })'
                     x-init="init()"
                     class="col-span-4"
@@ -88,7 +89,7 @@
                     <label class="label">Zones</label>
                     <select
                         x-ref="select"
-                        name="zones"
+                        name="zones[]"
                         multiple
                         class="w-full validator invalid:select-error"
                         tooltip=""
