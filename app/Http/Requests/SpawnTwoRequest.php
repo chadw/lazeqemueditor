@@ -14,7 +14,7 @@ class SpawnTwoRequest extends BaseRequest
         return [
             'spawngroupID' => 'integer|min:0|max:2147483647|nullable',
             'zone' => 'string|max:32|nullable',
-            'version' => 'integer|min:0|max:32767|nullable',
+            'version' => 'integer|min:-1|max:32767|nullable',
             'x' => 'numeric|nullable',
             'y' => 'numeric|nullable',
             'z' => 'numeric|nullable',

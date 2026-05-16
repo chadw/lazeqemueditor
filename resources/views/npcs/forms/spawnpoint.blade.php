@@ -18,7 +18,7 @@
                     name="version"
                     label="Zone Version"
                     type="number"
-                    min="0"
+                    min="-1"
                     x-model="$store.modalForm.form.version"
                 />
                 <div x-data="durationHelper()">
