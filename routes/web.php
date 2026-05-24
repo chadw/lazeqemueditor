@@ -372,6 +372,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::post('drops/{loottable}/link', [LootDropController::class, 'link'])->name('drops.link');
         Route::get('drops/search', [LootDropController::class, 'search'])->name('drops.search');
         Route::get('drops', [LootDropController::class, 'index'])->name('drops.index');
+        Route::get('drops/{drop}/tables', [LootDropController::class, 'tables'])->name('drops.tables');
         Route::post('{loottable}/drops', [LootDropController::class, 'store'])->name('drops.store');
         Route::get('drops/{drop}/edit', [LootDropController::class, 'edit'])->name('drops.edit');
         Route::put('drops/{drop}', [LootDropController::class, 'update'])->name('drops.update');

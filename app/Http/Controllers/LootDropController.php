@@ -205,6 +205,67 @@ class LootDropController extends Controller
     }
 
     /**
+     * Show loottables using this lootdrop
+     *
+     * @param  mixed $drop
+     * @return void
+     */
+    public function tables(LootDrop $drop)
+    {
+        $entries = LoottableEntry::where('lootdrop_id', $drop->id)->get();
+
+        $entries = $entries->groupBy('loottable_id')->map(function ($g) {
+            return $g->first();
+        })->values();
+
+        $ids = $entries->pluck('loottable_id')->unique()->values()->all();
+
+        $tables = [];
+        if (!empty($ids)) {
+            $tables = LootTable::whereIn('id', $ids)
+                ->select(['id', 'name', 'mincash', 'maxcash'])
+                ->withCount(['npcs', 'loottableEntries'])
+                ->get()
+                ->keyBy('id');
+        }
+
+        $rows = $entries->map(function ($r) use ($tables) {
+            $lt = $tables->get($r->loottable_id);
+
+            $mincash = $lt?->mincash ?? null;
+            $maxcash = $lt?->maxcash ?? null;
+
+            $minHtml = null;
+            $maxHtml = null;
+            try {
+                if (!is_null($mincash)) {
+                    $minHtml = view('components.currency', ['value' => $mincash])->render();
+                }
+                if (!is_null($maxcash)) {
+                    $maxHtml = view('components.currency', ['value' => $maxcash])->render();
+                }
+            } catch (\Throwable $e) {
+                $minHtml = null;
+                $maxHtml = null;
+            }
+
+                return [
+                'id' => $lt?->id ?? $r->loottable_id,
+                'name' => $lt?->name ?? ('Table ' . ($r->loottable_id ?? 'Unknown')),
+                'npcs' => $lt?->npcs_count ?? 0,
+                'drops' => $lt?->loottable_entries_count ?? 0,
+                'mincash' => $mincash,
+                'maxcash' => $maxcash,
+                'mincash_html' => $minHtml,
+                'maxcash_html' => $maxHtml,
+                'multiplier' => $r->multiplier ?? null,
+            ];
+        })->values();
+
+        return response()->json($rows);
+    }
+
+    /**
      * delete a loot drop and all related entries.
      *
      * @param  mixed $drop

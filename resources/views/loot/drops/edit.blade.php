@@ -28,7 +28,16 @@
         <div class="card bg-base-100 shadow-sm border border-base-300">
             <div class="bg-neutral text-neutral-content px-4 py-3 flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <h3 class="font-bold">Loot Drop: <span class="ml-2 font-mono">{{ $drop->name }} (ID: {{ $drop->id }})</span></h3>
+                    <h3 class="font-bold">
+                        <a href="#" class="text-base link-accent link-hover" @click.prevent="$store.modalForm.openCreate({
+                            modal: 'lootdrop-tables',
+                            resourceName: 'Loot Tables using {{ addslashes($drop->name) }}',
+                            defaults: { drop: { id: {{ $drop->id }}, name: '{{ addslashes($drop->name) }}' } },
+                            meta: { url: '{{ route('loot.drops.tables', $drop) }}' }
+                        })">
+                            <span>{{ $drop->name }} (ID: {{ $drop->id }})</span>
+                        </a>
+                    </h3>
                 </div>
                 <div>
                     <button type="button" class="btn btn-sm btn-soft btn-success"
@@ -157,11 +166,12 @@
             <template x-if="$store.modalForm.activeModal === 'lootdrop'">
                 @include('loot.forms.lootdrop-form')
             </template>
-
             <template x-if="$store.modalForm.activeModal === 'lootdrop-items'">
                 @include('loot.forms.lootdrop-item-form')
             </template>
+            <template x-if="$store.modalForm.activeModal === 'lootdrop-tables'">
+                @include('loot.drops.partials.modal-loottables')
+            </template>
         </x-modal-form>
-
     </div>
 @endsection

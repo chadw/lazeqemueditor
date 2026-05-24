@@ -42,7 +42,16 @@
                                 </a>
                             </td>
                             <td>{{ $drop->entries_count ?? 0 }}</td>
-                            <td>{{ $drop->loottable_entries_count ?? 0 }}</td>
+                            <td>
+                                <a href="#" class="text-base link-accent link-hover" @click.prevent="$store.modalForm.openCreate({
+                                    modal: 'lootdrop-tables',
+                                    resourceName: 'Loot Tables using {{ addslashes($drop->name) }}',
+                                    defaults: { drop: { id: {{ $drop->id }}, name: '{{ addslashes($drop->name) }}' } },
+                                    meta: { url: '{{ route('loot.drops.tables', $drop) }}' }
+                                })">
+                                    {{ $drop->loottable_entries_count ?? 0 }}
+                                </a>
+                            </td>
                             <td class="text-right space-x-2">
                                 <div class="inline join">
                                     <form action="{{ route('loot.drops.clone', $drop) }}" method="POST" class="inline">
@@ -82,6 +91,8 @@
                 </x-slot:body>
             </x-ui.table>
         </x-search-results>
+
+        @include('loot.drops.partials.modal-loottables')
 
         <div class="mt-4 shrink-0">
             {{ $drops->links() }}

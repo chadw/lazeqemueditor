@@ -51,6 +51,9 @@
             <template x-if="$store.modalForm.activeModal === 'lootdrop-items'">
                 @include('loot.forms.lootdrop-item-form')
             </template>
+            <template x-if="$store.modalForm.activeModal === 'lootdrop-tables'">
+                @include('loot.drops.partials.modal-loottables')
+            </template>
         </x-modal-form>
     </div>
 @endsection

@@ -8,7 +8,16 @@
     >
         <div class="bg-neutral text-neutral-content px-4 py-3 flex flex-wrap justify-between items-center gap-4 border-b border-base-300">
             <div class="flex items-center gap-3">
-                <div class="badge badge-soft badge-info font-mono text-xs">{{ $entry->lootdrop?->name ?? 'LootDrop #' . $entry->lootdrop_id }}</div>
+                <div class="badge badge-soft badge-info text-xs">
+                        <a href="#" class="link-accent link-hover" @click.prevent="$store.modalForm.openCreate({
+                            modal: 'lootdrop-tables',
+                            resourceName: 'Loot Tables using {{ addslashes($entry->lootdrop?->name) }}',
+                            defaults: { drop: { id: {{ $entry->lootdrop_id }}, name: '{{ addslashes($entry->lootdrop?->name) }}' } },
+                            meta: { url: '{{ route('loot.drops.tables', $entry->lootdrop) }}' }
+                        })">
+                    {{ $entry->lootdrop?->name ?? 'LootDrop #' . $entry->lootdrop_id }}
+                        </a>
+                </div>
                 <h3 class="font-bold text-sm">
                     <div class="text-xs opacity-60 font-mono">
                         LootDrop ID: {{ $entry->lootdrop_id }}
