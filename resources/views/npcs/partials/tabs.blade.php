@@ -2,7 +2,7 @@
     <input type="radio" name="n_tabs" value="main" class="tab" aria-label="Main"
         @if(! request()->has('tab') || request()->get('tab') === 'main') checked @endif />
     <div class="tab-content bg-base-100 border-base-300 p-6" x-data="formTracker">
-        <form method="POST" action="{{ route('npcs.update', $npc) }}" id="npc-edit-form">
+        <form method="POST" action="{{ route('npcs.update', $npc) }}" id="npc-edit-form" novalidate>
             @csrf
             @method('PUT')
 
