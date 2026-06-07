@@ -1,4 +1,16 @@
 <div class="space-y-6" x-data="formTracker">
+    <div class="flex items-center justify-end">
+        <button type="button" class="btn btn-sm btn-soft btn-success"
+            @click="$store.modalForm.openCreate({
+                baseUrl: '{{ route('spawngroups.store') }}',
+                resourceName: 'Spawn Group',
+                modal: 'spawn-group',
+                defaults: { spawn_group: { name: '{{ addslashes($npc->clean_name) }} Group' } },
+                meta: { onSuccess: 'attachSpawnEntryForNpc', npcId: {{ $npc->id }} }
+            })">
+            <x-ui.icon name="add" /> Add Spawn Group
+        </button>
+    </div>
     @if ($npc->spawnEntries)
         @foreach ($npc->spawnEntries as $spawn)
             <div class="card bg-base-100 shadow-sm border border-base-300 overflow-hidden"
@@ -247,3 +259,40 @@
         </div>
     @endif
 </div>
+
+<script>
+    async function attachSpawnEntryForNpc(data) {
+        try {
+            const store = window.Alpine?.store ? window.Alpine.store('modalForm') : null;
+            const npcId = store && store.meta ? store.meta.npcId : null;
+            const groupId = data?.id ?? data?.data?.id ?? null;
+            if (!groupId || !npcId) {
+                window.location.reload();
+                return;
+            }
+
+            const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            const fd = new FormData();
+            fd.append('npcID', String(npcId));
+
+            const entriesUrl = `/spawngroups/${groupId}/entries`;
+            const res = await fetch(entriesUrl, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': token, 'X-Requested-With': 'XMLHttpRequest' },
+                body: fd,
+                credentials: 'same-origin'
+            });
+
+            if (!res.ok) {
+                console.error('Failed attaching NPC to spawn group', await res.text().catch(() => res.status));
+                window.location.reload();
+                return;
+            }
+
+            window.location.reload();
+        } catch (e) {
+            console.error(e);
+            window.location.reload();
+        }
+    }
+</script>

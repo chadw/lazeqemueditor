@@ -63,6 +63,14 @@ class SpawnGroupController extends Controller
         $sg->name = $data['name'];
         $sg->save();
 
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'id' => $sg->id,
+                'data' => $sg,
+            ], 201);
+        }
+
         return back()->with('success', 'Spawn Group created.');
     }
 

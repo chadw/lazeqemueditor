@@ -10,10 +10,21 @@
         </div>
     </div>
     <input type="hidden" name="spawngroupID" x-model="$store.modalForm.form.spawngroupID" />
-    <input type="hidden" name="zone" x-model="$store.modalForm.form.zone" />
+    @php
+        $zoneOptions = $zones->mapWithKeys(function ($z) {
+            return [$z->short_name => $z->short_name . ': ' . $z->long_name];
+        })->all();
+    @endphp
     <div class="card bg-base-200 card-sm shadow-sm">
         <div class="card-body">
             <div class="grid grid-cols-8 gap-4">
+                <x-form.select
+                    name="zone"
+                    label="Zone"
+                    :options="$zoneOptions"
+                    x-model="$store.modalForm.form.zone"
+                    wrapper-class="col-span-7"
+                />
                 <x-form.input
                     name="version"
                     label="Zone Version"
@@ -21,6 +32,12 @@
                     min="-1"
                     x-model="$store.modalForm.form.version"
                 />
+            </div>
+        </div>
+    </div>
+    <div class="card bg-base-200 card-sm shadow-sm">
+        <div class="card-body">
+            <div class="grid grid-cols-6 gap-4">
                 <div x-data="durationHelper()">
                     <x-form.input
                         name="respawntime"
