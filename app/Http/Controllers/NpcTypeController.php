@@ -211,6 +211,10 @@ class NpcTypeController extends Controller
         // parent select
         $allNpcSpells = NpcSpell::orderBy('id')->pluck('name', 'id')->toArray();
 
+        if ($npc) {
+            $npc->loadMissing(['lootTable.loottableEntries.lootdropEntries.item']);
+        }
+
         // find usage
         $loottableUsage = $npc?->otherCountUsing('loottable_id') ?? 0;
         $spellsetUsage = $npc?->otherCountUsing('npc_spells_id') ?? 0;

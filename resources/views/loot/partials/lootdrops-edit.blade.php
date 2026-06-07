@@ -22,8 +22,10 @@
                     <div class="text-xs opacity-60 font-mono">
                         LootDrop ID: {{ $entry->lootdrop_id }}
                         · Prob: {{ $entry->probability }}%
-                        · Limit: {{ $entry->droplimit ?? '—' }}
-                        · Min: {{ $entry->mindrop ?? '—' }}
+                        · Limit: {{ $entry->droplimit ?? '-' }}
+                        · Min: {{ $entry->mindrop ?? '-' }}
+                        · Content Flags: <span class="{{ $entry->lootdrop?->content_flags ? 'text-accent' : '' }}">{{ $entry->lootdrop?->content_flags ?? '-' }}</span>
+                        · Content Flags Disabled: <span class="{{ $entry->lootdrop?->content_flags_disabled ? 'text-accent' : '' }}">{{ $entry->lootdrop?->content_flags_disabled ?? '-' }}</span>
                     </div>
                 </h3>
             </div>
