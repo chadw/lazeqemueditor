@@ -370,6 +370,13 @@ class SpellRequest extends BaseRequest
             'nimbuseffect' => $this->defaultInt('nimbuseffect', 0),
             'RecourseLink' => $this->defaultInt('RecourseLink', 0),
             'player_1' => $this->defaultString('player_1', 'BLUE_TRAIL'),
+            'teleport_zone' => $this->defaultString('teleport_zone', ''),
+            'you_cast' => $this->defaultString('you_cast', ''),
+            'other_casts' => $this->defaultString('other_casts', ''),
+            'cast_on_you' => $this->defaultString('cast_on_you', ''),
+            'cast_on_other' => $this->defaultString('cast_on_other', ''),
+            'spell_fades' => $this->defaultString('spell_fades', ''),
+            'name' => $this->defaultString('name', ''),
         ]);
     }
 }
