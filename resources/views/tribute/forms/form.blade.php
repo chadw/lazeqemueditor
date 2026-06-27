@@ -24,6 +24,19 @@
                 </div>
             </div>
         </div>
+        <div class="card bg-base-200 card-sm shadow-sm mb-4">
+            <div class="card-body">
+                <h2 class="card-title">Options</h2>
+                <div class="flex flex-wrap items-center gap-4">
+                    <x-form.checkbox
+                        name="isguild"
+                        label="Guild Tribute"
+                        tooltip=""
+                        x-model="$store.modalForm.form.isguild"
+                    />
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="lg:col-span-1 flex flex-col">

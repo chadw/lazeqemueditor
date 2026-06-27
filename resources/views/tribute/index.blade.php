@@ -10,13 +10,14 @@
                 @click="$store.modalForm.openCreate({
                 modal: 'tribute',
                 baseUrl: '{{ route('tribute.store') }}',
-                resourceName: 'Tribute'
+                resourceName: 'Tribute',
+                refreshOnSuccess: true
             })">
                 <x-ui.icon name="add" /> New Tribute
             </button>
         </x-top-links>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
             @foreach ($tributes as $tribute)
                 <div class="card bg-base-100 shadow">
                     <div class="card-body p-4">
@@ -24,6 +25,11 @@
                             <div class="min-w-0">
                                 <h2 class="card-title text-lg font-bold truncate">
                                     {{ $tribute->name }}
+                                    @if ($tribute->isguild == 1)
+                                        <span class="badge badge-success badge-soft">GUILD</span>
+                                    @else
+                                        <span class="badge badge-info badge-soft">PERSONAL</span>
+                                    @endif
                                 </h2>
                                 <p class="text-sm text-neutral-500 font-normal mt-0.5 mr-1 leading-tight truncate">
                                     {{ $tribute->descr }}
@@ -36,7 +42,8 @@
                                         '{{ route('tribute.update', ['id' => $tribute->id, 'isguild' => (int) $tribute->isguild]) }}',
                                         {
                                             modal: 'tribute',
-                                            resourceName: 'Edit Tribute'
+                                            resourceName: 'Edit Tribute',
+                                            refreshOnSuccess: true
                                         }
                                 )">
                                     <x-ui.icon name="edit" />
@@ -93,7 +100,8 @@
                                                         ]) }}',
                                                         {
                                                             modal: 'tribute-entry',
-                                                            resourceName: 'Edit Tribute Entry'
+                                                            resourceName: 'Edit Tribute Entry',
+                                                            refreshOnSuccess: true
                                                         }
                                                     )">
                                                     <x-ui.icon name="edit" />
@@ -129,6 +137,7 @@
                                     modal: 'tribute-entry',
                                     baseUrl: '{{ route('tribute.levels.store', ['tribute_id' => $tribute->id]) }}',
                                     resourceName: 'Add Tribute Entry',
+                                    refreshOnSuccess: true,
                                     defaults: {
                                         tribute_id: {{ $tribute->id }},
                                     }

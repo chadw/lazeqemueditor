@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\TributeLevelRequest;
 use App\Models\TributeLevel;
+use App\Models\Tribute;
 use Illuminate\Support\Facades\DB;
 use Spatie\DiscordAlerts\Facades\DiscordAlert;
 
@@ -25,6 +26,9 @@ class TributeLevelController extends Controller
         $entry = new TributeLevel();
         $entry->fill($data);
         $entry->silentSave();
+
+        $levelCount = TributeLevel::where('tribute_id', $tribute_id)->count();
+        Tribute::where('id', $tribute_id)->update(['unknown' => $levelCount]);
 
         $compositeId = "T:{$tribute_id}-L:{$level}";
 
@@ -60,32 +64,13 @@ class TributeLevelController extends Controller
         $oldAttributes = $entry->toArray();
         $updateData = collect($validated)->except(['tribute_id', 'level'])->toArray();
 
-        $entry->fill($updateData);
-        $entry->silentSave();
+        $updated = TributeLevel::where('tribute_id', $tribute_id)
+            ->where('level', $level)
+            ->update($updateData);
 
-        $compositeId = "T:{$tribute_id}-L:{$level}";
-
-        activity()
-            ->performedOn($entry)
-            ->useLog('tribute_level')
-            ->event('updated')
-            ->tap(function ($activity) use ($compositeId) {
-                $activity->subject_id = $compositeId;
-            })
-            ->withProperties([
-                'attributes' => $updateData,
-                'old' => $oldAttributes
-            ])
-            ->log('updated');
-
-        $user = auth()->user()?->name ?? 'System';
-        $costMsg = "{$entry->cost}" . ($entry->cost != $oldAttributes['cost'] ? " *(was: {$oldAttributes['cost']})*" : "");
-        $itemMsg = "{$entry->item_id}" . ($entry->item_id != $oldAttributes['item_id'] ? " *(was: {$oldAttributes['item_id']})*" : "");
-
-        $msg = "[UPDATED] [TributeLevel] - **User**: {$user}, **id**: {$compositeId}, " .
-            "**cost**: {$costMsg}, **item_id**: {$itemMsg}";
-
-        DiscordAlert::message($msg);
+        if ($updated) {
+            $entry->fill($updateData);
+        }
 
         toast()->success('Level Updated', "Tribute #{$tribute_id} Level {$level} has been saved.");
 
@@ -104,6 +89,9 @@ class TributeLevelController extends Controller
         TributeLevel::where('tribute_id', $tribute_id)
             ->where('level', $level)
             ->delete();
+
+        $levelCount = TributeLevel::where('tribute_id', $tribute_id)->count();
+        Tribute::where('id', $tribute_id)->update(['unknown' => $levelCount]);
 
         DB::table('activity_log')->insert([
             'log_name'      => 'tribute_level',
