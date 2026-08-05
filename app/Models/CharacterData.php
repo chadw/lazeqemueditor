@@ -65,6 +65,31 @@ class CharacterData extends BaseModel
         return $this->hasMany(CharacterAa::class, 'id');
     }
 
+    public function achievementCompletions(): HasMany
+    {
+        return $this->hasMany(CharacterAchievement::class, 'character_id', 'id');
+    }
+
+    public function achievementProgress(): HasMany
+    {
+        return $this->hasMany(CharacterAchievementProgress::class, 'character_id', 'id');
+    }
+
+    public function achievementRewards(): HasMany
+    {
+        return $this->hasMany(CharacterAchievementReward::class, 'character_id', 'id');
+    }
+
+    public function achievementRewardSelections(): HasMany
+    {
+        return $this->hasMany(CharacterAchievementRewardSelection::class, 'character_id', 'id');
+    }
+
+    public function achievementPendingMutations(): HasMany
+    {
+        return $this->hasMany(CharacterAchievementPendingMutation::class, 'character_id', 'id');
+    }
+
     public function guildMember(): HasOne
     {
         return $this->hasOne(GuildMember::class, 'char_id', 'id');

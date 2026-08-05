@@ -1,6 +1,7 @@
 @props([
     'route' => null,
     'active' => null,
+    'help' => null,
 ])
 
 @php
@@ -21,6 +22,7 @@
     <div x-data="{ open: {{ $isActive ? 'true' : 'false' }} }" class="space-y-1">
         <button
             type="button"
+            @if($help) title="{{ $help }}" @endif
             @click="open = !open"
             class="flex items-center justify-between w-full px-3 py-2 rounded-md transition
                 {{ $isActive ? 'bg-neutral/20 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}"
@@ -46,6 +48,7 @@
     </div>
 @else
     <a href="{{ route($route) }}"
+       @if($help) title="{{ $help }}" @endif
        class="flex items-center px-3 py-2 rounded-md transition
           {{ $isActive ? 'bg-neutral/20 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
         <span>{{ $slot }}</span>

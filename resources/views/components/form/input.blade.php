@@ -1,12 +1,14 @@
 @php
     $id = $attributes->get('id', $name);
     $tooltipTxt = $attributes->get('tooltip', '');
+    $helpTxt = $attributes->get('help', '');
     $labelClass = $attributes->get('label-class', '');
     $wrapperClass = $attributes->get('wrapper-class', '');
     $isReadonly = $attributes->has('readonly');
     $inputAttrs = $attributes->except([
         'tooltip',
         'tooltip-neutral',
+        'help',
         'wrapper-class',
         'label-suffix',
         'x-bind:label-suffix',
@@ -45,8 +47,11 @@
 >
     @if ($label)
         <label for="{{ $id }}" class="label">
-            <span class="label-text {{ $labelClass }}">
+            <span class="label-text {{ $labelClass }} inline-flex items-center gap-1">
                 {{ $label }}
+                @if ($helpTxt)
+                    <x-ui.field-help :text="$helpTxt" />
+                @endif
                 <span x-text="labelSuffix" class="text-info"></span>
                 @if ($required)
                     <span class="text-error">*</span>
