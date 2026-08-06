@@ -88,7 +88,7 @@
                     </div>
                 </div>
 
-                <div x-show="Number(component.component_type) === 3" class="alert alert-info py-2 mt-2">
+                <div x-show="Number(component.component_type) === 3" class="alert alert-soft alert-info py-2 mt-2">
                     Type 3 is presentation-only. It may be displayed by the client but cannot have an enabled criterion.
                 </div>
 
@@ -166,7 +166,7 @@
                                 </div>
                             </div>
 
-                            <div class="alert alert-info py-2 text-sm" x-text="eventHint(criterion.event_type)"></div>
+                            <div class="alert alert-soft alert-info py-2 text-sm" x-text="eventHint(criterion.event_type)"></div>
 
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                                 <div class="form-control">
@@ -308,7 +308,7 @@
         </div>
     </template>
 
-    <div x-show="editor.components.length === 0" class="alert alert-warning">
+    <div x-show="editor.components.length === 0" class="alert alert-soft alert-warning">
         This achievement has no component graph. Add a component before enabling it for ordinary runtime completion.
     </div>
 </div>

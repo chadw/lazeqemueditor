@@ -5,11 +5,11 @@
             <p class="text-sm opacity-65">These immediate checks are repeated and expanded by server-side validation when you save.</p>
             <div class="space-y-2 mt-3">
                 <template x-for="issue in validationIssues()" :key="issue.level + issue.message">
-                    <div class="alert" :class="issueClass(issue.level)">
+                    <div class="alert alert-soft" :class="issueClass(issue.level)">
                         <x-ui.icon name="warning" /> <span x-text="issue.message"></span>
                     </div>
                 </template>
-                <div x-show="validationIssues().length === 0" class="alert alert-success">
+                <div x-show="validationIssues().length === 0" class="alert alert-soft alert-success">
                     <x-ui.icon name="save" /> No definition-local problems detected.
                 </div>
             </div>

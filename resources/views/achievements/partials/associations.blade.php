@@ -57,7 +57,7 @@
             </template>
         </div>
 
-        <div x-show="editor.associations.length === 0" class="alert alert-error mt-3">
+        <div x-show="editor.associations.length === 0" class="alert alert-soft alert-error mt-3">
             An enabled definition without a valid category association prevents achievement content from loading.
         </div>
     </div>

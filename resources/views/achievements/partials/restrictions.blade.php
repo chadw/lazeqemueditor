@@ -14,7 +14,7 @@
             </button>
         </div>
 
-        <div class="alert alert-warning py-2 mt-3 text-sm">
+        <div class="alert alert-soft alert-warning py-2 mt-3 text-sm">
             Safe Clone intentionally omits these rows so a copied draft cannot silently alter live spell eligibility.
         </div>
 
