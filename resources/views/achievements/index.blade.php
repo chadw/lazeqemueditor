@@ -87,7 +87,7 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="form-control justify-end">
+                    <div class="flex flex-col justify-end">
                         <div class="join">
                             <button class="join-item btn btn-soft btn-info" type="submit">
                                 <x-ui.icon name="search" /> Filter

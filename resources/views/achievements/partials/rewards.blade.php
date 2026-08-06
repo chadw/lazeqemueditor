@@ -235,7 +235,7 @@
                     </template>
                 </div>
 
-                <div x-show="editor.reward_set.options.length === 0" class="alert alert-warning">
+                <div x-show="editor.reward_set.options.length === 0" class="alert alert-soft alert-warning">
                     An enabled selectable set requires at least one enabled choice option and a mapped enabled grant for every enabled option.
                 </div>
             </div>
