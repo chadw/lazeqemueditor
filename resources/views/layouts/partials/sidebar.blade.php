@@ -21,6 +21,8 @@
                 'qglobals.*',
                 'content-flags.*',
                 'ldon-trap-templates.*',
+                'achievements.*',
+                'achievement-categories.*',
             ]"
         >
             <x-slot name="icon">
@@ -29,6 +31,13 @@
             <x-nav.sidebar-link route="zones.index" :active="['zones.index', 'zones.edit']">Zones</x-nav.sidebar-link>
             <x-nav.sidebar-link route="spawngroups.index" active="spawngroups.*">Spawn Groups</x-nav.sidebar-link>
             <x-nav.sidebar-link route="tasks.index" active="tasks.*">Tasks</x-nav.sidebar-link>
+            <x-nav.sidebar-link :active="['achievements.*', 'achievement-categories.*']" label="Achievements"
+                help="Author achievement definitions, categories, criteria, rewards, and cast restrictions">
+                <x-nav.sidebar-link route="achievements.index" active="achievements.*"
+                    help="Browse and edit complete achievement definition graphs">Definitions</x-nav.sidebar-link>
+                <x-nav.sidebar-link route="achievement-categories.index" active="achievement-categories.*"
+                    help="Build the client-facing achievement category hierarchy">Categories</x-nav.sidebar-link>
+            </x-nav.sidebar-link>
             <x-nav.sidebar-link route="zones.graveyards.index" active="zones.graveyards.*">
                 Graveyards
             </x-nav.sidebar-link>
@@ -130,6 +139,7 @@
                 'guilds.*',
                 'parcels.*',
                 'titles.*',
+                'character-achievements.*',
             ]"
         >
             <x-slot name="icon">
@@ -137,6 +147,11 @@
             </x-slot>
             <x-nav.sidebar-link route="characters.index" :active="['characters.index', 'characters.show']">
                 Characters
+            </x-nav.sidebar-link>
+            <x-nav.sidebar-link route="character-achievements.index"
+                :active="['character-achievements.*', 'characters.achievements.*']"
+                help="Inspect and safely repair durable achievement state for offline characters">
+                Character Achievements
             </x-nav.sidebar-link>
             <x-nav.sidebar-link route="guilds.index" active="guilds.*">Guilds</x-nav.sidebar-link>
             <x-nav.sidebar-link route="parcels.index">Parcels</x-nav.sidebar-link>

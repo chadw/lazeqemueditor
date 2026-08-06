@@ -5,12 +5,16 @@ use App\Http\Controllers\AaRankController;
 use App\Http\Controllers\AaRankEffectController;
 use App\Http\Controllers\AaRankPrereqController;
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\AchievementCategoryController;
+use App\Http\Controllers\AchievementController;
+use App\Http\Controllers\AchievementLookupController;
 use App\Http\Controllers\AltCurrencyController;
 use App\Http\Controllers\AuraController;
 use App\Http\Controllers\BaseDataController;
 use App\Http\Controllers\BeastlordPetController;
 use App\Http\Controllers\BlockedSpellController;
 use App\Http\Controllers\BookController;
+use App\Http\Controllers\CharacterAchievementController;
 use App\Http\Controllers\CharacterController;
 use App\Http\Controllers\CharacterExpeditionLockoutController;
 use App\Http\Controllers\ChatController;
@@ -138,6 +142,30 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::post('ranks/batch-save-multiple', [AaRankController::class, 'batchSaveMultiple'])->name('ranks.batch-save-multiple');
     });
 
+    // Achievement definitions and authored category tree
+    Route::prefix('achievements')->name('achievements.')->group(function () {
+        Route::get('/', [AchievementController::class, 'index'])->name('index');
+        Route::get('/create', [AchievementController::class, 'create'])->name('create');
+        Route::get('/lookups/{type}', AchievementLookupController::class)->name('lookups');
+        Route::post('/', [AchievementController::class, 'store'])->name('store');
+        Route::get('/{achievement}/edit', [AchievementController::class, 'edit'])->name('edit')->whereNumber('achievement');
+        Route::post('/{achievement}/clone', [AchievementController::class, 'clone'])->name('clone')->whereNumber('achievement');
+        Route::match(['put', 'patch'], '/{achievement}', [AchievementController::class, 'update'])->name('update')->whereNumber('achievement');
+        Route::delete('/{achievement}', [AchievementController::class, 'destroy'])->name('destroy')->whereNumber('achievement');
+    });
+
+    Route::prefix('achievement-categories')->name('achievement-categories.')->group(function () {
+        Route::get('/', [AchievementCategoryController::class, 'index'])->name('index');
+        Route::post('/', [AchievementCategoryController::class, 'store'])->name('store');
+        Route::match(['put', 'patch'], '/{achievement_category}', [AchievementCategoryController::class, 'update'])
+            ->name('update')->whereNumber('achievement_category');
+        Route::delete('/{achievement_category}', [AchievementCategoryController::class, 'destroy'])
+            ->name('destroy')->whereNumber('achievement_category');
+    });
+
+    Route::get('/character-achievements', [CharacterAchievementController::class, 'index'])
+        ->name('character-achievements.index');
+
     // accounts
     Route::prefix('accounts')->name('accounts.')->group(function () {
         Route::get('/', [AccountController::class, 'index'])->name('index');
@@ -199,6 +227,24 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
             Route::get('{level}/{class}/edit', [BaseDataController::class, 'edit'])->name('edit');
             Route::put('{level}/{class}', [BaseDataController::class, 'update'])->name('update');
             Route::delete('{level}/{class}', [BaseDataController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::prefix('{character}/achievements')->name('achievements.')->group(function () {
+            Route::get('/', [CharacterAchievementController::class, 'show'])->name('show')->whereNumber('character');
+            Route::put('/{achievement}/components/{componentType}/{component}', [CharacterAchievementController::class, 'updateProgress'])
+                ->name('progress.update')->whereNumber(['character', 'achievement', 'componentType', 'component']);
+            Route::post('/{achievement}/complete', [CharacterAchievementController::class, 'forceComplete'])
+                ->name('complete')->whereNumber(['character', 'achievement']);
+            Route::delete('/{achievement}/reset', [CharacterAchievementController::class, 'reset'])
+                ->name('reset')->whereNumber(['character', 'achievement']);
+            Route::patch('/{achievement}/rewards/{reward}/retry', [CharacterAchievementController::class, 'markRewardRetryable'])
+                ->name('rewards.retry')->whereNumber(['character', 'achievement', 'reward']);
+            Route::patch('/{achievement}/reward-sets/{rewardSet}/retry', [CharacterAchievementController::class, 'markSelectionRetryable'])
+                ->name('reward-selections.retry')->whereNumber(['character', 'achievement', 'rewardSet']);
+            Route::patch('/{achievement}/mutations/{mutation}/retry', [CharacterAchievementController::class, 'retryMutation'])
+                ->name('mutations.retry')->whereNumber(['character', 'achievement', 'mutation']);
+            Route::delete('/{achievement}/mutations/{mutation}', [CharacterAchievementController::class, 'discardMutation'])
+                ->name('mutations.discard')->whereNumber(['character', 'achievement', 'mutation']);
         });
 
         Route::get('{character}/edit', [CharacterController::class, 'edit'])->name('edit');

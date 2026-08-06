@@ -6,10 +6,12 @@ import TomSelect from "tom-select";
 import "@melloware/coloris/dist/coloris.css";
 import Coloris from "@melloware/coloris";
 import { validRaceModels } from './race-models';
+import registerAchievementEditor from './achievement-editor';
 window.validRaceModels = validRaceModels;
 
 Alpine.plugin(intersect)
 Alpine.plugin(collapse)
+registerAchievementEditor(Alpine)
 
 const baseUrl = document.querySelector('base')?.getAttribute('href') || '/';
 
@@ -2220,7 +2222,7 @@ Alpine.data('ajaxSelect', (config = {}) => ({
             });
         }
     },
-    prefill() {
+    async prefill() {
         if (!this.ts) return;
 
         let source = null;
@@ -2259,6 +2261,39 @@ Alpine.data('ajaxSelect', (config = {}) => ({
         } else {
             items = [source];
         }
+
+        if (this.prefillPath) {
+            const unresolvedIds = items
+                .filter(item => item !== null && item !== undefined)
+                .filter(item => typeof item !== 'object'
+                    || !(item.name ?? item.Name ?? item.label ?? item.title ?? item.short_name))
+                .map(item => item?.id ?? item?.ID ?? item?.value ?? item)
+                .filter(id => id !== null && id !== undefined && String(id) !== '');
+
+            if (unresolvedIds.length) {
+                try {
+                    const separator = this.prefillPath.includes('?') ? '&' : '?';
+                    const response = await fetch(
+                        `${this.prefillPath}${separator}ids=${encodeURIComponent(unresolvedIds.join(','))}`
+                    );
+                    if (response.ok) {
+                        const resolved = await response.json();
+                        const resolvedById = new Map(
+                            (Array.isArray(resolved) ? resolved : [])
+                                .map(item => [String(item.id ?? item.ID ?? item.value), item])
+                        );
+                        items = items.map(item => {
+                            const id = item?.id ?? item?.ID ?? item?.value ?? item;
+                            return resolvedById.get(String(id)) ?? item;
+                        });
+                    }
+                } catch (e) {
+                    // Preserve an ID-only fallback when optional label hydration fails.
+                }
+            }
+        }
+
+        if (!this.ts) return;
 
         let ids = [];
 

@@ -62,6 +62,30 @@
             @include('characters.tabs.factions')
         </div>
 
+        <input type="radio" name="character_tabs" class="tab" aria-label="Achievements"
+            title="Inspect completion, progress, reward ledgers, selections, and queued mutations" />
+        <div class="tab-content bg-base-100 border-base-300 p-6">
+            <div class="card bg-base-200 border border-base-content/10">
+                <div class="card-body">
+                    <h2 class="card-title">Achievement State</h2>
+                    <p class="text-sm opacity-70">
+                        Open the focused achievement-state editor to inspect this character's durable progress,
+                        completion versions, reward delivery ledgers, selections, and queued mutations.
+                    </p>
+                    <x-ui.alert-warning>
+                        State changes are offline database repairs. Live notifications, dependency evaluation, and reward
+                        delivery occur only when the character next logs in or reloads achievement state.
+                    </x-ui.alert-warning>
+                    <div class="card-actions justify-end">
+                        <a href="{{ route('characters.achievements.show', $character->id) }}" class="btn btn-soft btn-success"
+                            title="Open the safe per-achievement repair workflow for this character">
+                            Manage Achievements
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <label class="tab">
             <input type="radio" name="character_tabs" value="corpses"
                 @if(request()->get('tab') === 'corpses') checked @endif
