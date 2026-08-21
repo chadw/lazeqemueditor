@@ -20,6 +20,7 @@ use App\Http\Controllers\CharacterExpeditionLockoutController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ClientFileController;
 use App\Http\Controllers\ContentFlagController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DataBucketController;
 use App\Http\Controllers\DbstrController;
 use App\Http\Controllers\DiscordWebhookController;
@@ -91,7 +92,7 @@ use App\Http\Controllers\UpdateController;
 use App\Http\Controllers\VariableController;
 use App\Http\Controllers\ZoneController;
 use App\Http\Controllers\ZonePointController;
-use App\Http\Controllers\DashboardController;
+use App\Http\Middleware\NoCache;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard');
@@ -111,7 +112,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // aa abilitys/ranks
     Route::prefix('aa')->name('aa.')->group(function () {
         Route::get('/', [AaAbilityController::class, 'index'])
-            ->middleware(\App\Http\Middleware\NoCache::class)
+            ->middleware(NoCache::class)
             ->name('index');
         Route::get('/create', [AaAbilityController::class, 'create'])->name('create');
         Route::get('/search', [AaAbilityController::class, 'search'])->name('search');
@@ -149,7 +150,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::get('/lookups/{type}', AchievementLookupController::class)->name('lookups');
         Route::post('/', [AchievementController::class, 'store'])->name('store');
         Route::get('/{achievement}/edit', [AchievementController::class, 'edit'])->name('edit')->whereNumber('achievement');
-        Route::post('/{achievement}/clone', [AchievementController::class, 'clone'])->name('clone')->whereNumber('achievement');
+        Route::post('/{achievement}/clone', [AchievementController::class, 'clone'])
+            ->name('clone')->whereNumber('achievement');
         Route::match(['put', 'patch'], '/{achievement}', [AchievementController::class, 'update'])->name('update')->whereNumber('achievement');
         Route::delete('/{achievement}', [AchievementController::class, 'destroy'])->name('destroy')->whereNumber('achievement');
     });
@@ -241,10 +243,10 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
                 ->name('rewards.retry')->whereNumber(['character', 'achievement', 'reward']);
             Route::patch('/{achievement}/reward-sets/{rewardSet}/retry', [CharacterAchievementController::class, 'markSelectionRetryable'])
                 ->name('reward-selections.retry')->whereNumber(['character', 'achievement', 'rewardSet']);
-            Route::patch('/{achievement}/mutations/{mutation}/retry', [CharacterAchievementController::class, 'retryMutation'])
-                ->name('mutations.retry')->whereNumber(['character', 'achievement', 'mutation']);
-            Route::delete('/{achievement}/mutations/{mutation}', [CharacterAchievementController::class, 'discardMutation'])
-                ->name('mutations.discard')->whereNumber(['character', 'achievement', 'mutation']);
+            Route::patch('/{achievement}/updates/{update}/retry', [CharacterAchievementController::class, 'retryUpdate'])
+                ->name('updates.retry')->whereNumber(['character', 'achievement', 'update']);
+            Route::delete('/{achievement}/updates/{update}', [CharacterAchievementController::class, 'discardUpdate'])
+                ->name('updates.discard')->whereNumber(['character', 'achievement', 'update']);
         });
 
         Route::get('{character}/edit', [CharacterController::class, 'edit'])->name('edit');
@@ -357,7 +359,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // items
     Route::prefix('items')->name('items.')->group(function () {
         Route::get('/', [ItemController::class, 'index'])
-            ->middleware(\App\Http\Middleware\NoCache::class)
+            ->middleware(NoCache::class)
             ->name('index');
         Route::match(['post', 'put'], '/preview', [ItemController::class, 'preview'])->name('preview');
         Route::get('{item}/edit', [ItemController::class, 'edit'])->name('edit');
@@ -397,7 +399,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // loot
     Route::prefix('loot')->name('loot.')->group(function () {
         Route::get('/', [LootTableController::class, 'index'])
-            ->middleware(\App\Http\Middleware\NoCache::class)
+            ->middleware(NoCache::class)
             ->name('index');
         Route::get('{loottable}/edit', [LootTableController::class, 'edit'])->name('edit');
         Route::post('/', [LootTableController::class, 'store'])->name('store');
@@ -492,7 +494,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // npcs
     Route::prefix('npcs')->name('npcs.')->group(function () {
         Route::get('/', [NpcTypeController::class, 'index'])
-            ->middleware(\App\Http\Middleware\NoCache::class)
+            ->middleware(NoCache::class)
             ->name('index');
         Route::get('{npc}/edit', [NpcTypeController::class, 'edit'])->name('edit');
         Route::match(['post', 'put'], '/preview', [NpcTypeController::class, 'preview'])->name('preview');
@@ -592,7 +594,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // spells
     Route::prefix('spells')->name('spells.')->group(function () {
         Route::get('/', [SpellController::class, 'index'])
-            ->middleware(\App\Http\Middleware\NoCache::class)
+            ->middleware(NoCache::class)
             ->name('index');
         Route::get('/tz', [SpellController::class, 'tz'])->name('tz');
         Route::get('/search', [SpellController::class, 'search'])->name('search');
@@ -616,7 +618,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::prefix('tasks')->name('tasks.')->group(function () {
         Route::get('/', [TaskController::class, 'index'])->name('index');
 
-        //shared tasks
+        // shared tasks
         Route::prefix('shared-tasks')->name('shared-tasks.')->group(function () {
             Route::get('/active', [SharedTaskController::class, 'active'])->name('active');
             Route::get('/completed', [SharedTaskController::class, 'completed'])->name('completed');
@@ -654,7 +656,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // tradeskills
     Route::prefix('tradeskills')->name('tradeskills.')->group(function () {
         Route::resource('container-templates', TradeskillContainerTemplateController::class)->parameters([
-            'container-templates' => 'tradeskillContainerTemplate'
+            'container-templates' => 'tradeskillContainerTemplate',
         ]);
 
         Route::get(
@@ -781,4 +783,4 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

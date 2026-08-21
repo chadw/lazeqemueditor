@@ -2,14 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AchievementRewardSet extends BaseModel
 {
     protected $connection = 'eqemu';
 
-    protected $table = 'achievement_reward_sets';
+    protected $table = 'reward_sets';
 
     protected $primaryKey = 'reward_set_id';
 
@@ -21,7 +20,6 @@ class AchievementRewardSet extends BaseModel
 
     protected $fillable = [
         'reward_set_id',
-        'achievement_id',
         'title',
         'enabled',
     ];
@@ -29,11 +27,6 @@ class AchievementRewardSet extends BaseModel
     protected $casts = [
         'enabled' => 'boolean',
     ];
-
-    public function achievement(): BelongsTo
-    {
-        return $this->belongsTo(Achievement::class, 'achievement_id', 'id');
-    }
 
     public function options(): HasMany
     {
@@ -56,5 +49,10 @@ class AchievementRewardSet extends BaseModel
             'reward_set_id',
             'reward_set_id'
         );
+    }
+
+    public function sources(): HasMany
+    {
+        return $this->hasMany(RewardSource::class, 'reward_set_id', 'reward_set_id');
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\AchievementCategoryRequest;
+use App\Models\AchievementCategory;
 use App\Services\AchievementAggregateService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -33,45 +34,40 @@ class AchievementCategoryController extends Controller
         ]);
     }
 
-    public function store(AchievementCategoryRequest $request): RedirectResponse
+    public function store(AchievementCategoryRequest $request)
     {
-        $categoryId = $this->achievements->storeCategory($request->validated());
-        toast()->success('Saved!', "Achievement category {$categoryId} created.");
+        $data = $request->validated();
 
-        return redirect()->route('achievement-categories.index', ['edit' => $categoryId]);
+        $model = AchievementCategory::create($data);
+
+        toast()->success('Saved!', 'Achievement Category created.');
+
+        return response()->json([
+            'success' => true,
+            'data'    => $model,
+            'redirect'=> route('achievement-categories.index'),
+        ], 201);
     }
 
-    public function update(
-        AchievementCategoryRequest $request,
-        mixed $achievement_category
-    ): RedirectResponse {
-        $categoryId = $this->routeId($achievement_category);
-        $this->achievements->updateCategory($categoryId, $request->validated());
-        toast()->success('Saved!', "Achievement category {$categoryId} updated.");
+    public function update(AchievementCategoryRequest $request, AchievementCategory $achievement_category)
+    {
+        $data = $request->validated();
 
-        return redirect()->route('achievement-categories.index', ['edit' => $categoryId]);
+        $achievement_category->update($data);
+
+        toast()->success('Saved!', "Achievement Category {$achievement_category->id} updated.");
+
+        return response()->json([
+            'success' => true,
+            'data'    => $achievement_category,
+            'redirect'=> route('achievement-categories.index'),
+        ], 201);
     }
 
-    public function destroy(mixed $achievement_category): RedirectResponse
+    public function destroy(AchievementCategory $achievement_category)
     {
-        $categoryId = $this->routeId($achievement_category);
-        $this->achievements->destroyCategory($categoryId);
-        toast()->success('Deleted!', "Achievement category {$categoryId} deleted.");
+        $achievement_category->delete();
 
-        return redirect()->route('achievement-categories.index');
-    }
-
-    private function routeId(mixed $value): int
-    {
-        if (is_object($value)) {
-            if (method_exists($value, 'getKey')) {
-                return (int) $value->getKey();
-            }
-            if (isset($value->id)) {
-                return (int) $value->id;
-            }
-        }
-
-        return (int) $value;
+        return back()->with('success', "Achievement Category {$achievement_category->id} deleted.");
     }
 }

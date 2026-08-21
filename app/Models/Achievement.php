@@ -9,13 +9,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Achievement extends BaseModel
 {
     protected $connection = 'eqemu';
-
     protected $table = 'achievements';
-
     public $incrementing = false;
-
     protected $keyType = 'int';
-
     public $timestamps = false;
 
     protected $fillable = [
@@ -24,14 +20,15 @@ class Achievement extends BaseModel
         'description',
         'icon_id',
         'points',
-        'reward_display',
-        'world_display_flag',
-        'definition_version',
+        'has_reward',
+        'client_flag',
+        'version',
         'reset_on_version_change',
         'enabled',
     ];
 
     protected $casts = [
+        'has_reward' => 'boolean',
         'reset_on_version_change' => 'boolean',
         'enabled' => 'boolean',
     ];
@@ -72,19 +69,21 @@ class Achievement extends BaseModel
             ->orderBy('id');
     }
 
-    public function rewards(): HasMany
+    public function automaticRewardEntries(): HasMany
     {
-        return $this->hasMany(AchievementReward::class, 'achievement_id', 'id')
+        return $this->hasMany(RewardSourceEntry::class, 'source_id', 'id')
+            ->where('source_type', RewardSource::ACHIEVEMENT)
             ->orderBy('sequence')
             ->orderBy('reward_id');
     }
 
-    public function rewardSet(): HasOne
+    public function rewardSource(): HasOne
     {
-        return $this->hasOne(AchievementRewardSet::class, 'achievement_id', 'id');
+        return $this->hasOne(RewardSource::class, 'source_id', 'id')
+            ->where('source_type', RewardSource::ACHIEVEMENT);
     }
 
-    public function castRestrictions(): HasMany
+    public function castRequirements(): HasMany
     {
         return $this->hasMany(AchievementCastRestriction::class, 'achievement_id', 'id')
             ->orderBy('restriction_id');
@@ -110,8 +109,8 @@ class Achievement extends BaseModel
         return $this->hasMany(CharacterAchievementRewardSelection::class, 'achievement_id', 'id');
     }
 
-    public function pendingMutations(): HasMany
+    public function pendingUpdates(): HasMany
     {
-        return $this->hasMany(CharacterAchievementPendingMutation::class, 'achievement_id', 'id');
+        return $this->hasMany(CharacterAchievementPendingUpdate::class, 'achievement_id', 'id');
     }
 }

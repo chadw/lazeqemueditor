@@ -19,7 +19,7 @@ class CharacterAchievement extends BaseModel
     protected $fillable = [
         'character_id',
         'achievement_id',
-        'definition_version',
+        'version',
         'completed_at',
     ];
 

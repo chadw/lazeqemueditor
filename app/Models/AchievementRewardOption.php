@@ -9,7 +9,7 @@ class AchievementRewardOption extends BaseModel
 {
     protected $connection = 'eqemu';
 
-    protected $table = 'achievement_reward_options';
+    protected $table = 'reward_options';
 
     protected $primaryKey = null;
 

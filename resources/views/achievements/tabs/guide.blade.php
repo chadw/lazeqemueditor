@@ -2,22 +2,21 @@
     $eventGuidance = $metadata['target_guidance'] ?? [];
     $allowedModes = $metadata['allowed_progress_modes'] ?? [];
 @endphp
-
 <div class="space-y-4">
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <div class="card bg-base-100 shadow xl:col-span-2">
+        <div class="card bg-base-200 card-sm shadow-sm xl:col-span-2">
             <div class="card-body">
                 <h2 class="card-title">Safe Publishing Workflow</h2>
                 <ol class="list-decimal ml-5 space-y-2 text-sm">
                     <li>Author new or incompatible work as a disabled draft and use new stable IDs for new durable identities.</li>
                     <li>Verify category ancestry, component policy consistency, referenced records, rewards, and dependency cycles.</li>
-                    <li>For incompatible deployed changes, increment <code>definition_version</code> and explicitly choose whether mismatch should reset character state and reward ledgers.</li>
+                    <li>For deployed semantic changes—including criteria, reward grants, the selectable source link, or reset behavior—explicitly increment <code>version</code> and choose whether mismatched character state and reward ledgers should reset. Version <code>0</code> is valid initially.</li>
                     <li>Save the transaction, review the Validation tab, then run <code>#reload achievements global</code>.</li>
                     <li>Read the zone result. Reload stages and validates the full catalog; a failed load leaves the previous active snapshot in place.</li>
                 </ol>
             </div>
         </div>
-        <div class="card bg-base-100 shadow">
+        <div class="card bg-base-200 card-sm shadow-sm">
             <div class="card-body">
                 <h2 class="card-title">Durable Identity Rules</h2>
                 <ul class="list-disc ml-5 space-y-2 text-sm">
@@ -31,7 +30,7 @@
         </div>
     </div>
 
-    <div class="card bg-base-100 shadow">
+    <div class="card bg-base-200 card-sm shadow-sm">
         <div class="card-body">
             <h2 class="card-title">Criterion Event Reference</h2>
             <p class="text-sm opacity-65">Target help in the Components tab changes immediately when an event is selected.</p>
@@ -78,7 +77,7 @@
     </div>
 
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <div class="card bg-base-100 shadow">
+        <div class="card bg-base-200 card-sm shadow-sm">
             <div class="card-body">
                 <h2 class="card-title">Component Behaviors</h2>
                 <dl class="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2 text-sm">
@@ -91,7 +90,7 @@
                 </dl>
             </div>
         </div>
-        <div class="card bg-base-100 shadow">
+        <div class="card bg-base-200 card-sm shadow-sm">
             <div class="card-body">
                 <h2 class="card-title">Reward Data IDs</h2>
                 <dl class="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2 text-sm">

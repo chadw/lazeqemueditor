@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\Achievements\AchievementMetadata;
 use Illuminate\Validation\Validator;
 
 class AchievementRequest extends BaseRequest
@@ -9,6 +10,14 @@ class AchievementRequest extends BaseRequest
     private const UINT32_MAX = 4294967295;
 
     private const HIGHEST_SKILL = 77;
+
+    private const UINT64_MAX = '18446744073709551615';
+
+    private const TEXT_MAX_BYTES = 65_535;
+
+    private const INT32_MAX = '2147483647';
+
+    private const COPPER_MAX = '2147483647999';
 
     public function authorize(): bool
     {
@@ -23,9 +32,9 @@ class AchievementRequest extends BaseRequest
             'description' => ['nullable', 'string'],
             'icon_id' => ['required', 'integer', 'min:0', 'max:'.self::UINT32_MAX],
             'points' => ['required', 'integer', 'min:0', 'max:'.self::UINT32_MAX],
-            'reward_display' => ['required', 'integer', 'min:0', 'max:'.self::UINT32_MAX],
-            'world_display_flag' => ['required', 'integer', 'min:0', 'max:255'],
-            'definition_version' => ['required', 'integer', 'min:1', 'max:'.self::UINT32_MAX],
+            'has_reward' => ['required', 'boolean'],
+            'client_flag' => ['required', 'integer', 'min:0', 'max:255'],
+            'version' => ['required', 'integer', 'min:0', 'max:'.self::UINT32_MAX],
             'reset_on_version_change' => ['required', 'boolean'],
             'enabled' => ['required', 'boolean'],
 
@@ -38,8 +47,8 @@ class AchievementRequest extends BaseRequest
             'components.*.component_type' => ['required', 'integer', 'between:0,3'],
             'components.*.sequence' => ['required', 'integer', 'min:0', 'max:'.self::UINT32_MAX],
             'components.*.component_id' => ['required', 'integer', 'min:0', 'max:'.self::UINT32_MAX],
+            'components.*.name' => ['nullable', 'string'],
             'components.*.description' => ['nullable', 'string'],
-            'components.*.description_2' => ['nullable', 'string'],
             'components.*.presentation_count' => ['required', 'integer', 'min:1', 'max:'.self::UINT32_MAX],
             'components.*.criteria' => ['present', 'array'],
             'components.*.criteria.*.id' => ['nullable', 'integer', 'min:1'],
@@ -53,11 +62,11 @@ class AchievementRequest extends BaseRequest
             'components.*.criteria.*.enabled' => ['required', 'boolean'],
 
             'rewards' => ['present', 'array'],
-            'rewards.*.reward_id' => ['nullable', 'integer', 'min:1'],
+            'rewards.*.reward_id' => ['nullable', 'integer', 'min:1', 'max:'.self::UINT32_MAX],
             'rewards.*.sequence' => ['required', 'integer', 'min:0', 'max:'.self::UINT32_MAX],
             'rewards.*.reward_type' => ['required', 'integer', 'between:0,5'],
             'rewards.*.reward_data_id' => ['required', 'integer', 'min:0', 'max:'.self::UINT32_MAX],
-            'rewards.*.amount' => ['required', 'integer', 'min:1'],
+            'rewards.*.amount' => ['required', 'regex:/^[0-9]+$/'],
             'rewards.*.description' => ['nullable', 'string', 'max:255'],
             'rewards.*.enabled' => ['required', 'boolean'],
             'rewards.*.option_id' => ['nullable', 'integer', 'min:1', 'max:'.self::UINT32_MAX],
@@ -66,6 +75,7 @@ class AchievementRequest extends BaseRequest
             'reward_set.reward_set_id' => ['nullable', 'integer', 'min:1', 'max:'.self::UINT32_MAX],
             'reward_set.title' => ['nullable', 'string', 'max:255'],
             'reward_set.enabled' => ['required_with:reward_set', 'boolean'],
+            'reward_set.source_enabled' => ['required_with:reward_set', 'boolean'],
             'reward_set.options' => ['required_with:reward_set', 'array'],
             'reward_set.options.*.option_id' => ['required', 'integer', 'min:1', 'max:'.self::UINT32_MAX],
             'reward_set.options.*.sequence' => ['required', 'integer', 'min:0', 'max:'.self::UINT32_MAX],
@@ -108,7 +118,7 @@ class AchievementRequest extends BaseRequest
 
         foreach ($rewards as &$reward) {
             $reward['reward_data_id'] = $this->integerValue($reward['reward_data_id'] ?? 0, 0);
-            $reward['amount'] = $this->integerValue($reward['amount'] ?? 1, 1);
+            $reward['amount'] = (string) $this->integerValue($reward['amount'] ?? 1, 1);
             $reward['enabled'] = $this->booleanValue($reward['enabled'] ?? false);
             if (($reward['reward_id'] ?? null) === '') {
                 $reward['reward_id'] = null;
@@ -129,6 +139,9 @@ class AchievementRequest extends BaseRequest
                     $rewardSet['reward_set_id'] = null;
                 }
                 $rewardSet['enabled'] = $this->booleanValue($rewardSet['enabled'] ?? false);
+                $rewardSet['source_enabled'] = $this->booleanValue(
+                    $rewardSet['source_enabled'] ?? true
+                );
                 $rewardSet['options'] = is_array($rewardSet['options'] ?? null)
                     ? $rewardSet['options']
                     : [];
@@ -153,9 +166,9 @@ class AchievementRequest extends BaseRequest
             'description' => (string) $this->input('description', ''),
             'icon_id' => $this->defaultInt('icon_id', 0),
             'points' => $this->defaultInt('points', 0),
-            'reward_display' => $this->defaultInt('reward_display', 0),
-            'world_display_flag' => $this->defaultInt('world_display_flag', 0),
-            'definition_version' => $this->defaultInt('definition_version', 1),
+            'has_reward' => $this->boolean('has_reward') ? 1 : 0,
+            'client_flag' => $this->defaultInt('client_flag', 0),
+            'version' => $this->defaultInt('version', 0),
             'reset_on_version_change' => $this->boolean('reset_on_version_change') ? 1 : 0,
             'enabled' => $this->boolean('enabled') ? 1 : 0,
             'associations' => $associations,
@@ -173,6 +186,7 @@ class AchievementRequest extends BaseRequest
             $this->validateStableAchievementId($validator, $data);
             $this->validateAssociations($validator, $data);
             $this->validateComponentsAndCriteria($validator, $data);
+            $this->validateTextStorageLimits($validator, $data);
             $this->validateRewards($validator, $data);
             $this->validateRestrictions($validator, $data);
         }];
@@ -281,6 +295,13 @@ class AchievementRequest extends BaseRequest
                 }
                 $enabledPolicy ??= $policy;
 
+                if (! AchievementMetadata::isProgressModeAllowed($eventType, $progressMode)) {
+                    $validator->errors()->add(
+                        "{$path}.progress_mode",
+                        'This progress mode is rejected by EQEmu for the selected event. Reconciled and one-time events cannot use Increment.'
+                    );
+                }
+
                 if ($targetId2 !== 0 && ! in_array($eventType, [7, 12, 13], true)) {
                     $validator->errors()->add(
                         "{$path}.target_id2",
@@ -334,14 +355,6 @@ class AchievementRequest extends BaseRequest
                 }
 
                 $absoluteEvent = in_array($eventType, [1, 7, 9, 10, 13], true);
-                $replayedSpecificEvent = $eventType === 4 && $targetId !== 0;
-                $replayedAchievementEvent = $eventType === 11;
-                if ($progressMode === 0 && ($absoluteEvent || $replayedSpecificEvent || $replayedAchievementEvent)) {
-                    $validator->errors()->add(
-                        "{$path}.progress_mode",
-                        'Increment mode cannot be used for reconciled absolute or one-time events.'
-                    );
-                }
                 if ($progressMode === 3 && $absoluteEvent && $targetValue < 1) {
                     $validator->errors()->add(
                         "{$path}.target_value",
@@ -372,10 +385,14 @@ class AchievementRequest extends BaseRequest
     private function validateRewards(Validator $validator, array $data): void
     {
         $rewardIds = [];
-        $rewardSequences = [];
+        $automaticSequences = [];
         $optionIds = [];
         $enabledOptionRewards = [];
         $rewardSet = $data['reward_set'] ?? null;
+        $definitionEnabled = (int) ($data['enabled'] ?? 0) === 1;
+        $selectableSourceEnabled = is_array($rewardSet)
+            && (int) ($rewardSet['enabled'] ?? 0) === 1
+            && (int) ($rewardSet['source_enabled'] ?? 0) === 1;
 
         if (is_array($rewardSet)) {
             foreach (($rewardSet['options'] ?? []) as $index => $option) {
@@ -395,8 +412,21 @@ class AchievementRequest extends BaseRequest
             $sequence = (int) ($reward['sequence'] ?? 0);
             $rewardType = (int) ($reward['reward_type'] ?? -1);
             $rewardDataId = (int) ($reward['reward_data_id'] ?? 0);
+            $amount = ltrim((string) ($reward['amount'] ?? ''), '0');
+            $amount = $amount === '' ? '0' : $amount;
             $enabled = (int) ($reward['enabled'] ?? 0) === 1;
             $optionId = $reward['option_id'] ?? null;
+            $option = $optionId === null ? null : ($optionIds[(int) $optionId] ?? null);
+            $published = $definitionEnabled
+                && $enabled
+                && (
+                    $optionId === null
+                    || (
+                        $selectableSourceEnabled
+                        && is_array($option)
+                        && (int) ($option['enabled'] ?? 0) === 1
+                    )
+                );
 
             if ($rewardId !== null) {
                 $rewardId = (string) $rewardId;
@@ -408,30 +438,36 @@ class AchievementRequest extends BaseRequest
                 }
                 $rewardIds[$rewardId] = true;
             }
-            if (isset($rewardSequences[$sequence])) {
-                $validator->errors()->add(
-                    "rewards.{$index}.sequence",
-                    'Reward sequence must be unique within the achievement.'
-                );
+            if ($optionId === null) {
+                if (isset($automaticSequences[$sequence])) {
+                    $validator->errors()->add(
+                        "rewards.{$index}.sequence",
+                        'Automatic reward sequence must be unique within this achievement source.'
+                    );
+                }
+                $automaticSequences[$sequence] = true;
             }
-            $rewardSequences[$sequence] = true;
 
-            if ($enabled && in_array($rewardType, [0, 4, 5], true) && $rewardDataId === 0) {
+            if ($amount === '0' || $this->unsignedDecimalGreaterThan($amount, self::UINT64_MAX)) {
                 $validator->errors()->add(
-                    "rewards.{$index}.reward_data_id",
-                    'Enabled item, alternate-currency, and title rewards require a nonzero data ID.'
-                );
-            }
-            if ($enabled && $rewardType === 1 && $rewardDataId > 1) {
-                $validator->errors()->add(
-                    "rewards.{$index}.reward_data_id",
-                    'Experience reward mode must be 0 (normal handling) or 1 (normal-only raw XP).'
+                    "rewards.{$index}.amount",
+                    'Reward amount must be between 1 and 18446744073709551615.'
                 );
             }
             if ($enabled && $rewardId !== null && (int) $rewardId > self::UINT32_MAX) {
                 $validator->errors()->add(
                     "rewards.{$index}.reward_id",
                     'Enabled reward IDs must fit the unsigned 32-bit RoF2 wire field.'
+                );
+            }
+
+            if ($published) {
+                $this->validatePublishedRewardDelivery(
+                    $validator,
+                    $index,
+                    $rewardType,
+                    $rewardDataId,
+                    $amount
                 );
             }
 
@@ -449,7 +485,12 @@ class AchievementRequest extends BaseRequest
             }
         }
 
-        if (! is_array($rewardSet) || (int) ($rewardSet['enabled'] ?? 0) !== 1) {
+        if (
+            ! is_array($rewardSet)
+            || (int) ($data['enabled'] ?? 0) !== 1
+            || (int) ($rewardSet['enabled'] ?? 0) !== 1
+            || (int) ($rewardSet['source_enabled'] ?? 0) !== 1
+        ) {
             return;
         }
 
@@ -478,6 +519,182 @@ class AchievementRequest extends BaseRequest
         }
     }
 
+    private function validateTextStorageLimits(Validator $validator, array $data): void
+    {
+        $this->validateTextBytes(
+            $validator,
+            'description',
+            $data['description'] ?? '',
+            'Achievement description'
+        );
+        foreach (($data['components'] ?? []) as $index => $component) {
+            $this->validateTextBytes(
+                $validator,
+                "components.{$index}.name",
+                $component['name'] ?? '',
+                'Component name'
+            );
+            $this->validateTextBytes(
+                $validator,
+                "components.{$index}.description",
+                $component['description'] ?? '',
+                'Component description'
+            );
+        }
+    }
+
+    private function validateTextBytes(
+        Validator $validator,
+        string $key,
+        mixed $value,
+        string $label
+    ): void {
+        if (strlen((string) $value) > self::TEXT_MAX_BYTES) {
+            $validator->errors()->add(
+                $key,
+                "{$label} must fit in a MySQL TEXT field (65,535 UTF-8 bytes)."
+            );
+        }
+    }
+
+    private function validatePublishedRewardDelivery(
+        Validator $validator,
+        int $index,
+        int $rewardType,
+        int $rewardDataId,
+        string $amount
+    ): void {
+        $amountKey = "rewards.{$index}.amount";
+        $dataKey = "rewards.{$index}.reward_data_id";
+
+        if (in_array($rewardType, [0, 4, 5], true) && $rewardDataId === 0) {
+            $validator->errors()->add(
+                $dataKey,
+                'Published item, alternate-currency, and title rewards require a nonzero data ID.'
+            );
+        }
+
+        match ($rewardType) {
+            0 => $this->addAmountMaximumError(
+                $validator,
+                $amountKey,
+                $amount,
+                '32767',
+                'Published item stack count cannot exceed 32,767.'
+            ),
+            1 => $this->validatePublishedExperienceReward(
+                $validator,
+                $dataKey,
+                $amountKey,
+                $rewardDataId,
+                $amount
+            ),
+            2 => $this->validatePublishedZeroDataReward(
+                $validator,
+                $dataKey,
+                $amountKey,
+                $rewardDataId,
+                $amount,
+                self::INT32_MAX,
+                'Alternate-advancement rewards require data ID 0.',
+                'Published alternate-advancement amount cannot exceed 2,147,483,647.'
+            ),
+            3 => $this->validatePublishedZeroDataReward(
+                $validator,
+                $dataKey,
+                $amountKey,
+                $rewardDataId,
+                $amount,
+                self::COPPER_MAX,
+                'Copper rewards require data ID 0.',
+                'Published copper amount cannot exceed 2,147,483,647 platinum plus 999 copper.'
+            ),
+            4 => $this->addAmountMaximumError(
+                $validator,
+                $amountKey,
+                $amount,
+                self::INT32_MAX,
+                'Published alternate-currency amount cannot exceed 2,147,483,647.'
+            ),
+            5 => $this->validatePublishedTitleReward(
+                $validator,
+                $dataKey,
+                $amountKey,
+                $rewardDataId,
+                $amount
+            ),
+            default => null,
+        };
+    }
+
+    private function validatePublishedExperienceReward(
+        Validator $validator,
+        string $dataKey,
+        string $amountKey,
+        int $rewardDataId,
+        string $amount
+    ): void {
+        if ($rewardDataId > 1) {
+            $validator->errors()->add(
+                $dataKey,
+                'Experience reward mode must be 0 (normal handling) or 1 (normal-only raw XP).'
+            );
+        }
+        $this->addAmountMaximumError(
+            $validator,
+            $amountKey,
+            $amount,
+            (string) self::UINT32_MAX,
+            'Published experience amount cannot exceed 4,294,967,295.'
+        );
+    }
+
+    private function validatePublishedZeroDataReward(
+        Validator $validator,
+        string $dataKey,
+        string $amountKey,
+        int $rewardDataId,
+        string $amount,
+        string $maximum,
+        string $dataMessage,
+        string $amountMessage
+    ): void {
+        if ($rewardDataId !== 0) {
+            $validator->errors()->add($dataKey, $dataMessage);
+        }
+        $this->addAmountMaximumError($validator, $amountKey, $amount, $maximum, $amountMessage);
+    }
+
+    private function validatePublishedTitleReward(
+        Validator $validator,
+        string $dataKey,
+        string $amountKey,
+        int $rewardDataId,
+        string $amount
+    ): void {
+        if ($rewardDataId > (int) self::INT32_MAX) {
+            $validator->errors()->add(
+                $dataKey,
+                'Published title ID cannot exceed 2,147,483,647.'
+            );
+        }
+        if ($amount !== '1') {
+            $validator->errors()->add($amountKey, 'Title rewards must use amount 1.');
+        }
+    }
+
+    private function addAmountMaximumError(
+        Validator $validator,
+        string $key,
+        string $amount,
+        string $maximum,
+        string $message
+    ): void {
+        if ($this->unsignedDecimalGreaterThan($amount, $maximum)) {
+            $validator->errors()->add($key, $message);
+        }
+    }
+
     private function validateRestrictions(Validator $validator, array $data): void
     {
         $restrictionIds = [];
@@ -501,5 +718,14 @@ class AchievementRequest extends BaseRequest
     private function booleanValue(mixed $value): int
     {
         return filter_var($value, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
+    }
+
+    private function unsignedDecimalGreaterThan(string $value, string $maximum): bool
+    {
+        $value = ltrim($value, '0');
+        $value = $value === '' ? '0' : $value;
+
+        return strlen($value) > strlen($maximum)
+            || (strlen($value) === strlen($maximum) && strcmp($value, $maximum) > 0);
     }
 }

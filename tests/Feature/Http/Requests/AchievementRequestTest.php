@@ -15,9 +15,9 @@ class AchievementRequestTest extends TestCase
         $payload['description'] = null;
         $payload['icon_id'] = '';
         $payload['points'] = '';
-        $payload['reward_display'] = '';
-        $payload['world_display_flag'] = '';
-        $payload['definition_version'] = '';
+        $payload['has_reward'] = '';
+        $payload['client_flag'] = '';
+        $payload['version'] = '';
         $payload['reset_on_version_change'] = 'on';
         $payload['enabled'] = 'true';
         $payload['components'][0]['criteria'][0]['target_id'] = '';
@@ -32,7 +32,7 @@ class AchievementRequestTest extends TestCase
         $this->assertValidatorPasses($validator);
         $this->assertSame('', $request->input('description'));
         $this->assertSame(0, $request->input('icon_id'));
-        $this->assertSame(1, $request->input('definition_version'));
+        $this->assertSame(0, $request->input('version'));
         $this->assertSame(1, $request->input('reset_on_version_change'));
         $this->assertSame(1, $request->input('enabled'));
         $this->assertSame(
@@ -132,6 +132,7 @@ class AchievementRequestTest extends TestCase
         $cases = [
             [1, 0, 0, 60],
             [4, 25, 0, 0],
+            [5, 0, 0, 1],
             [7, 1001, 0, 1],
             [9, 0, 0, 200],
             [10, 0, 0, 50],
@@ -218,6 +219,133 @@ class AchievementRequestTest extends TestCase
         $this->assertValidatorPasses($validator);
     }
 
+    public function test_version_zero_and_full_unsigned_reward_amount_are_preserved_in_a_draft(): void
+    {
+        $payload = $this->validRewardPayload();
+        $payload['version'] = 0;
+        $payload['enabled'] = 0;
+        $payload['rewards'][0]['amount'] = '18446744073709551615';
+
+        [$request, $validator] = $this->validatorFor($payload);
+
+        $this->assertValidatorPasses($validator);
+        $this->assertSame(0, $request->input('version'));
+        $this->assertSame(
+            '18446744073709551615',
+            $request->input('rewards.0.amount')
+        );
+    }
+
+    public function test_reward_amount_above_unsigned_bigint_is_rejected(): void
+    {
+        $payload = $this->validRewardPayload();
+        $payload['rewards'][0]['amount'] = '18446744073709551616';
+
+        [, $validator] = $this->validatorFor($payload);
+
+        $this->assertValidationError($validator, 'rewards.0.amount');
+    }
+
+    public function test_mysql_text_fields_enforce_the_utf8_byte_limit(): void
+    {
+        $boundary = str_repeat('é', 32_767).'a';
+        $valid = $this->validPayload();
+        $valid['description'] = $boundary;
+        $valid['components'][0]['name'] = $boundary;
+        $valid['components'][0]['description'] = $boundary;
+        [, $validValidator] = $this->validatorFor($valid);
+        $this->assertValidatorPasses($validValidator);
+
+        foreach (['description', 'name', 'component_description'] as $field) {
+            $payload = $this->validPayload();
+            $oversized = str_repeat('é', 32_768);
+            $key = 'description';
+            if ($field === 'name') {
+                $payload['components'][0]['name'] = $oversized;
+                $key = 'components.0.name';
+            } elseif ($field === 'component_description') {
+                $payload['components'][0]['description'] = $oversized;
+                $key = 'components.0.description';
+            } else {
+                $payload['description'] = $oversized;
+            }
+
+            [, $validator] = $this->validatorFor($payload);
+            $this->assertValidationError($validator, $key);
+        }
+    }
+
+    public function test_published_rewards_enforce_delivery_type_bounds_and_semantics(): void
+    {
+        $validCases = [
+            [0, 1001, '32767'],
+            [1, 1, '4294967295'],
+            [2, 0, '2147483647'],
+            [3, 0, '2147483647999'],
+            [4, 100, '2147483647'],
+            [5, 100, '1'],
+        ];
+        foreach ($validCases as [$type, $dataId, $amount]) {
+            $payload = $this->validRewardPayload();
+            $payload['rewards'][0]['reward_type'] = $type;
+            $payload['rewards'][0]['reward_data_id'] = $dataId;
+            $payload['rewards'][0]['amount'] = $amount;
+            [, $validator] = $this->validatorFor($payload);
+            $this->assertValidatorPasses($validator);
+        }
+
+        $invalidCases = [
+            [0, 1001, '32768', 'rewards.0.amount'],
+            [1, 0, '4294967296', 'rewards.0.amount'],
+            [1, 2, '1', 'rewards.0.reward_data_id'],
+            [2, 0, '2147483648', 'rewards.0.amount'],
+            [2, 1, '1', 'rewards.0.reward_data_id'],
+            [3, 0, '2147483648000', 'rewards.0.amount'],
+            [3, 1, '1', 'rewards.0.reward_data_id'],
+            [4, 100, '2147483648', 'rewards.0.amount'],
+            [5, 2147483648, '1', 'rewards.0.reward_data_id'],
+            [5, 100, '2', 'rewards.0.amount'],
+        ];
+        foreach ($invalidCases as [$type, $dataId, $amount, $key]) {
+            $payload = $this->validRewardPayload();
+            $payload['rewards'][0]['reward_type'] = $type;
+            $payload['rewards'][0]['reward_data_id'] = $dataId;
+            $payload['rewards'][0]['amount'] = $amount;
+            [, $validator] = $this->validatorFor($payload);
+            $this->assertValidationError($validator, $key);
+        }
+
+        $draft = $this->validRewardPayload();
+        $draft['enabled'] = 0;
+        $draft['rewards'][0]['reward_type'] = 5;
+        $draft['rewards'][0]['reward_data_id'] = 2147483648;
+        $draft['rewards'][0]['amount'] = '2';
+        [, $draftValidator] = $this->validatorFor($draft);
+        $this->assertValidatorPasses($draftValidator);
+    }
+
+    public function test_disabled_selectable_source_can_stage_incomplete_options(): void
+    {
+        $payload = $this->validRewardPayload();
+        $payload['reward_set']['source_enabled'] = 0;
+        $payload['rewards'] = [];
+
+        [, $validator] = $this->validatorFor($payload);
+
+        $this->assertValidatorPasses($validator);
+    }
+
+    public function test_disabled_definition_can_stage_incomplete_selectable_content(): void
+    {
+        $payload = $this->validRewardPayload();
+        $payload['enabled'] = 0;
+        $payload['rewards'] = [];
+
+        [, $validator] = $this->validatorFor($payload);
+
+        $this->assertValidatorPasses($validator);
+    }
+
     public function test_reward_delivery_and_option_mapping_guards_fail_closed(): void
     {
         $missingDataId = $this->validRewardPayload();
@@ -266,7 +394,32 @@ class AchievementRequestTest extends TestCase
         $duplicateReward['rewards'][] = $duplicateReward['rewards'][0];
         [, $rewardValidator] = $this->validatorFor($duplicateReward);
         $this->assertValidationError($rewardValidator, 'rewards.1.reward_id');
-        $this->assertValidationError($rewardValidator, 'rewards.1.sequence');
+
+        $duplicateAutomaticSequence = $this->validPayload();
+        $duplicateAutomaticSequence['rewards'] = [
+            [
+                'reward_id' => null,
+                'sequence' => 7,
+                'reward_type' => 2,
+                'reward_data_id' => 0,
+                'amount' => 1,
+                'description' => 'First',
+                'enabled' => 1,
+                'option_id' => null,
+            ],
+            [
+                'reward_id' => null,
+                'sequence' => 7,
+                'reward_type' => 3,
+                'reward_data_id' => 0,
+                'amount' => 1,
+                'description' => 'Second',
+                'enabled' => 1,
+                'option_id' => null,
+            ],
+        ];
+        [, $sequenceValidator] = $this->validatorFor($duplicateAutomaticSequence);
+        $this->assertValidationError($sequenceValidator, 'rewards.1.sequence');
 
         $oversizedReward = $this->validRewardPayload();
         $oversizedReward['rewards'][0]['reward_id'] = 4294967296;
@@ -293,9 +446,9 @@ class AchievementRequestTest extends TestCase
             'description' => 'A test definition',
             'icon_id' => 0,
             'points' => 10,
-            'reward_display' => 0,
-            'world_display_flag' => 0,
-            'definition_version' => 1,
+            'has_reward' => 0,
+            'client_flag' => 0,
+            'version' => 0,
             'reset_on_version_change' => 1,
             'enabled' => 1,
             'associations' => [[
@@ -307,8 +460,8 @@ class AchievementRequestTest extends TestCase
                 'component_type' => 1,
                 'sequence' => 0,
                 'component_id' => 500,
-                'description' => 'Do the thing',
-                'description_2' => '',
+                'name' => 'Do the thing',
+                'description' => 'Complete this component.',
                 'presentation_count' => 1,
                 'criteria' => [[
                     'id' => null,
@@ -365,6 +518,7 @@ class AchievementRequestTest extends TestCase
             'reward_set_id' => null,
             'title' => 'Choose a reward',
             'enabled' => 1,
+            'source_enabled' => 1,
             'options' => [[
                 'option_id' => 1,
                 'sequence' => 0,

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\CharacterAchievementMutationException;
-use App\Http\Requests\DiscardCharacterAchievementMutationRequest;
+use App\Http\Requests\DiscardCharacterAchievementUpdateRequest;
 use App\Http\Requests\ForceCompleteCharacterAchievementRequest;
 use App\Http\Requests\MarkCharacterAchievementRewardRetryableRequest;
 use App\Http\Requests\ResetCharacterAchievementRequest;
@@ -112,12 +112,12 @@ class CharacterAchievementController extends Controller
         if ($resetRewards) {
             toast()->warning(
                 'Achievement and rewards reset',
-                'Completion, progress, queued mutations, reward selections, and reward ledgers were removed. Recompletion can grant rewards again.'
+                'Completion, progress, queued updates, reward selections, and reward ledgers were removed. Recompletion can grant rewards again.'
             );
         } else {
             toast()->success(
                 'Achievement reset',
-                'Completion, progress, and queued mutations were removed. Reward ledgers were preserved.'
+                'Completion, progress, and queued updates were removed. Reward ledgers were preserved.'
             );
         }
 
@@ -172,47 +172,47 @@ class CharacterAchievementController extends Controller
         return back();
     }
 
-    public function retryMutation(
+    public function retryUpdate(
         CharacterData $character,
         int $achievement,
-        int $mutation
+        int $update
     ): RedirectResponse {
         try {
-            $this->achievements->retryBlockedMutation(
+            $this->achievements->retryBlockedUpdate(
                 $character->id,
                 $achievement,
-                $mutation
+                $update
             );
         } catch (CharacterAchievementMutationException $exception) {
             return $this->mutationFailed($exception);
         }
 
         toast()->success(
-            'Mutation queued for retry',
+            'Update queued for retry',
             'The blocked status and lease diagnostic were cleared. The definition-version guard remains in force.'
         );
 
         return back();
     }
 
-    public function discardMutation(
-        DiscardCharacterAchievementMutationRequest $request,
+    public function discardUpdate(
+        DiscardCharacterAchievementUpdateRequest $request,
         CharacterData $character,
         int $achievement,
-        int $mutation
+        int $update
     ): RedirectResponse {
         try {
-            $this->achievements->discardMutation(
+            $this->achievements->discardUpdate(
                 $character->id,
                 $achievement,
-                $mutation
+                $update
             );
         } catch (CharacterAchievementMutationException $exception) {
             return $this->mutationFailed($exception);
         }
 
         toast()->warning(
-            'Queued mutation discarded',
+            'Queued update discarded',
             'The authored request was deleted without applying it to character progress.'
         );
 

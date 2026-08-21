@@ -9,13 +9,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class AchievementCategory extends BaseModel
 {
     protected $connection = 'eqemu';
-
     protected $table = 'achievement_categories';
-
     public $incrementing = false;
-
     protected $keyType = 'int';
-
     public $timestamps = false;
 
     protected $fillable = [

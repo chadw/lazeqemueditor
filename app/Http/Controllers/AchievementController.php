@@ -25,22 +25,26 @@ class AchievementController extends Controller
         $categoryCount = $connection->table('achievement_category_associations AS association')
             ->selectRaw('COUNT(*)')
             ->whereColumn('association.achievement_id', 'achievement.id');
-        $rewardCount = $connection->table('achievement_rewards AS reward')
-            ->selectRaw('COUNT(*)')
-            ->whereColumn('reward.achievement_id', 'achievement.id');
-        $restrictionCount = $connection->table('achievement_cast_restrictions AS restriction')
+        $restrictionCount = $connection->table('achievement_cast_requirements AS restriction')
             ->selectRaw('COUNT(*)')
             ->whereColumn('restriction.achievement_id', 'achievement.id');
-        $rewardSetCount = $connection->table('achievement_reward_sets AS reward_set')
+        $rewardSetCount = $connection->table('reward_sources AS reward_source')
             ->selectRaw('COUNT(*)')
-            ->whereColumn('reward_set.achievement_id', 'achievement.id');
+            ->where('reward_source.source_type', 1)
+            ->whereColumn('reward_source.source_id', 'achievement.id');
 
         $query = $connection->table('achievements AS achievement')
             ->select('achievement.*')
             ->selectSub($componentCount, 'components_count')
             ->selectSub($criteriaCount, 'criteria_count')
             ->selectSub($categoryCount, 'categories_count')
-            ->selectSub($rewardCount, 'rewards_count')
+            ->selectRaw(
+                '(SELECT COUNT(*) FROM reward_source_entries automatic_entry '
+                .'WHERE automatic_entry.source_type = 1 AND automatic_entry.source_id = achievement.id) '
+                .'+ (SELECT COUNT(*) FROM reward_option_entries option_entry '
+                .'INNER JOIN reward_sources selected_source ON selected_source.reward_set_id = option_entry.reward_set_id '
+                .'WHERE selected_source.source_type = 1 AND selected_source.source_id = achievement.id) AS rewards_count'
+            )
             ->selectSub($restrictionCount, 'restrictions_count')
             ->selectSub($rewardSetCount, 'has_reward_set');
 
@@ -88,40 +92,41 @@ class AchievementController extends Controller
             $query->where(function ($query): void {
                 $query->whereExists(function ($query): void {
                     $query->selectRaw('1')
-                        ->from('achievement_rewards AS filtered_reward')
-                        ->whereColumn('filtered_reward.achievement_id', 'achievement.id');
+                        ->from('reward_source_entries AS filtered_reward')
+                        ->where('filtered_reward.source_type', 1)
+                        ->whereColumn('filtered_reward.source_id', 'achievement.id');
                 })->orWhereExists(function ($query): void {
                     $query->selectRaw('1')
-                        ->from('achievement_reward_sets AS filtered_set')
-                        ->whereColumn('filtered_set.achievement_id', 'achievement.id');
+                        ->from('reward_sources AS filtered_set')
+                        ->where('filtered_set.source_type', 1)
+                        ->whereColumn('filtered_set.source_id', 'achievement.id');
                 });
             });
         } elseif ($rewardFilter === 'automatic') {
             $query->whereExists(function ($query): void {
                 $query->selectRaw('1')
-                    ->from('achievement_rewards AS filtered_reward')
-                    ->whereColumn('filtered_reward.achievement_id', 'achievement.id')
-                    ->whereNotExists(function ($query): void {
-                        $query->selectRaw('1')
-                            ->from('achievement_reward_option_entries AS filtered_mapping')
-                            ->whereColumn('filtered_mapping.reward_id', 'filtered_reward.reward_id');
-                    });
+                    ->from('reward_source_entries AS filtered_reward')
+                    ->where('filtered_reward.source_type', 1)
+                    ->whereColumn('filtered_reward.source_id', 'achievement.id');
             });
         } elseif ($rewardFilter === 'selectable') {
             $query->whereExists(function ($query): void {
                 $query->selectRaw('1')
-                    ->from('achievement_reward_sets AS filtered_set')
-                    ->whereColumn('filtered_set.achievement_id', 'achievement.id');
+                    ->from('reward_sources AS filtered_set')
+                    ->where('filtered_set.source_type', 1)
+                    ->whereColumn('filtered_set.source_id', 'achievement.id');
             });
         } elseif ($rewardFilter === 'none') {
             $query->whereNotExists(function ($query): void {
                 $query->selectRaw('1')
-                    ->from('achievement_rewards AS filtered_reward')
-                    ->whereColumn('filtered_reward.achievement_id', 'achievement.id');
+                    ->from('reward_source_entries AS filtered_reward')
+                    ->where('filtered_reward.source_type', 1)
+                    ->whereColumn('filtered_reward.source_id', 'achievement.id');
             })->whereNotExists(function ($query): void {
                 $query->selectRaw('1')
-                    ->from('achievement_reward_sets AS filtered_set')
-                    ->whereColumn('filtered_set.achievement_id', 'achievement.id');
+                    ->from('reward_sources AS filtered_set')
+                    ->where('filtered_set.source_type', 1)
+                    ->whereColumn('filtered_set.source_id', 'achievement.id');
             });
         }
 
@@ -129,7 +134,7 @@ class AchievementController extends Controller
             'id' => 'achievement.id',
             'name' => 'achievement.name',
             'points' => 'achievement.points',
-            'definition_version' => 'achievement.definition_version',
+            'version' => 'achievement.version',
             'enabled' => 'achievement.enabled',
             'component_count' => 'components_count',
             'category_count' => 'categories_count',

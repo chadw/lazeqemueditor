@@ -12,114 +12,56 @@
         ];
     @endphp
 
-    <div class="space-y-5">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <div class="flex flex-wrap items-center gap-2">
-                <a href="{{ route('character-achievements.index') }}" class="btn btn-sm btn-ghost tooltip"
-                    data-tip="Return to the character achievement picker">← Characters</a>
-                <a href="{{ route('characters.show', $character->id) }}" class="btn btn-sm btn-soft tooltip"
-                    data-tip="Open the normal character detail page">Character Sheet</a>
-                <span class="badge badge-outline tooltip" data-tip="character_data.id">
-                    ID {{ $character->id }}
+    <x-top-links>
+        <x-slot name="left">
+            <a href="{{ route('character-achievements.index') }}" class="btn btn-soft tooltip tooltip-bottom">
+                ← Characters
+            </a>
+            <a href="{{ route('characters.show', $character->id) }}" class="btn btn-soft btn-accent">Character Sheet</a>
+            <span class="badge badge-soft badge-default">ID {{ $character->id }}</span>
+            <span class="badge badge-soft badge-default">
+                Level {{ $character->level }} {{ eq_class($character->class) }}
+            </span>
+            @if ($isOnline)
+                <span class="badge badge-error badge-soft tooltip tooltip-bottom"
+                    data-tip="character_data.ingame is nonzero; offline force-completion is blocked">
+                    In game
                 </span>
-                <span class="badge badge-outline tooltip" data-tip="Saved level and class">
-                    Level {{ $character->level }} {{ eq_class($character->class) }}
+            @else
+                <span class="badge badge-success badge-soft tooltip tooltip-bottom"
+                    data-tip="character_data.ingame is zero; offline-only completion is available">
+                    Offline
                 </span>
-                @if ($isOnline)
-                    <span class="badge badge-error badge-soft tooltip"
-                        data-tip="character_data.ingame is nonzero; offline force-completion is blocked">
-                        In game
-                    </span>
-                @else
-                    <span class="badge badge-success badge-soft tooltip"
-                        data-tip="character_data.ingame is zero; offline-only completion is available">
-                        Offline
-                    </span>
-                @endif
-            </div>
-            <a href="{{ route('achievements.index') }}" class="btn btn-sm btn-soft btn-info tooltip"
-                data-tip="Edit global definitions, components, criteria, and rewards">Achievement Content</a>
-        </div>
+            @endif
+        </x-slot>
+        <a href="{{ route('achievements.index') }}" class="btn btn-soft btn-info float-end">Achievement Content</a>
+    </x-top-links>
 
+    <div class="space-y-5">
         <x-ui.alert-warning>
             <div class="font-semibold">These controls edit server-owned durable state directly.</div>
             <p class="mt-1 text-sm">
                 {{ $metadata['force_completion_warning'] }} Exact progress and resets also do not refresh an
                 already loaded client's in-memory state, so logging the character out before administrative edits
-                is strongly recommended. Every mutation is serialized with the EQEmu character-achievement lock.
+                is strongly recommended. Every administrative write is serialized with the EQEmu character-achievement lock.
             </p>
             <p class="mt-1 text-sm font-medium">
                 Reward ledgers are at-most-once safety boundaries. They are preserved by ordinary reset and are
                 changed only by the explicitly labeled high-risk controls below.
             </p>
         </x-ui.alert-warning>
-
         <x-ui.card>
             <x-slot:header>
-                <div>
-                    <div class="font-semibold">Catalog filters</div>
-                    <div class="text-xs opacity-70">Filters run in SQL before the 25-row page is loaded.</div>
-                </div>
+                <div class="font-semibold">Catalog filters</div>
             </x-slot:header>
-            <form method="GET" action="{{ route('characters.achievements.show', $character->id) }}"
-                class="grid grid-cols-1 gap-3 p-4 md:grid-cols-12 md:items-end">
-                <label class="form-control md:col-span-5">
-                    <span class="label py-1">
-                        <span class="label-text font-semibold">Achievement ID, name, or description</span>
-                        <span class="label-text-alt tooltip tooltip-left"
-                            data-tip="A numeric value checks the exact ID and also searches presentation text.">?</span>
-                    </span>
-                    <input type="search" name="q" value="{{ $metadata['filters']['q'] }}"
-                        class="input input-bordered w-full" placeholder="Search this catalog page source">
-                </label>
-
-                <label class="form-control md:col-span-3">
-                    <span class="label py-1">
-                        <span class="label-text font-semibold">Category</span>
-                        <span class="label-text-alt tooltip tooltip-left"
-                            data-tip="Matches a direct achievement-category association; it does not automatically include descendants.">?</span>
-                    </span>
-                    <select name="category" class="select select-bordered w-full">
-                        <option value="">All categories</option>
-                        @foreach ($categories as $category)
-                            <option value="{{ $category->id }}"
-                                @selected((string) $metadata['filters']['category'] === (string) $category->id)>
-                                {{ $category->name }} [{{ $category->id }}]
-                            </option>
-                        @endforeach
-                    </select>
-                </label>
-
-                <label class="form-control md:col-span-2">
-                    <span class="label py-1">
-                        <span class="label-text font-semibold">Durable state</span>
-                        <span class="label-text-alt tooltip tooltip-left"
-                            data-tip="Computed only from persisted completion, progress, reward, and mutation rows.">?</span>
-                    </span>
-                    <select name="state" class="select select-bordered w-full">
-                        @foreach ($metadata['durable_states'] as $value => $label)
-                            <option value="{{ $value }}" @selected($metadata['filters']['state'] === $value)>
-                                {{ $label }}
-                            </option>
-                        @endforeach
-                    </select>
-                </label>
-
-                <div class="flex gap-2 md:col-span-2">
-                    <button type="submit" class="btn btn-accent flex-1 tooltip"
-                        data-tip="Apply all catalog filters">Filter</button>
-                    <a href="{{ route('characters.achievements.show', $character->id) }}"
-                        class="btn btn-ghost tooltip" data-tip="Clear all catalog filters">Clear</a>
-                </div>
-            </form>
+            @include('character-achievements.partials.filters')
         </x-ui.card>
-
         <div class="flex flex-wrap items-center justify-between gap-2 text-sm text-base-content/70">
             <span>
-                Showing {{ $achievements->firstItem() ?? 0 }}–{{ $achievements->lastItem() ?? 0 }} of
+                Showing {{ $achievements->firstItem() ?? 0 }}-{{ $achievements->lastItem() ?? 0 }} of
                 {{ number_format($achievements->total()) }} matching definitions.
             </span>
-            <span class="tooltip" data-tip="Rows are ordered enabled-first, then by name and ID.">
+            <span>
                 Page {{ $achievements->currentPage() }} / {{ max($achievements->lastPage(), 1) }}
             </span>
         </div>
@@ -131,7 +73,7 @@
                     $stateClass = $stateBadgeClasses[$achievement->durable_state] ?? 'badge-ghost';
                     $hasCoreState = $completion
                         || $achievement->progress->isNotEmpty()
-                        || $achievement->pending_mutations->isNotEmpty();
+                        || $achievement->pending_updates->isNotEmpty();
                     $hasRewardState = $achievement->reward_ledgers->isNotEmpty()
                         || $achievement->reward_selections->isNotEmpty();
                     $hasAnyState = $hasCoreState || $hasRewardState;
@@ -152,7 +94,7 @@
                 @endphp
 
                 <details class="collapse collapse-arrow border border-base-300 bg-base-100 shadow-sm"
-                    @if ($achievement->has_version_mismatch || $achievement->reward_needs_attention || $achievement->pending_mutations->isNotEmpty()) open @endif>
+                    @if ($achievement->has_version_mismatch || $achievement->reward_needs_attention || $achievement->pending_updates->isNotEmpty()) open @endif>
                     <summary class="collapse-title pr-12">
                         <div class="flex flex-wrap items-start justify-between gap-3">
                             <div class="min-w-0 flex-1">
@@ -180,10 +122,10 @@
                                             Reward attention
                                         </span>
                                     @endif
-                                    @if ($achievement->pending_mutations->isNotEmpty())
+                                    @if ($achievement->pending_updates->isNotEmpty())
                                         <span class="badge badge-sm badge-warning badge-outline tooltip"
-                                            data-tip="Durable cross-zone mutation requests exist for this character and achievement">
-                                            {{ $achievement->pending_mutations->count() }} queued
+                                            data-tip="Durable cross-zone state-update requests exist for this character and achievement">
+                                            {{ $achievement->pending_updates->count() }} queued
                                         </span>
                                     @endif
                                 </div>
@@ -205,8 +147,8 @@
                                 </div>
                             </div>
                             <div class="flex shrink-0 flex-col items-end gap-1 text-xs text-base-content/65">
-                                <span class="tooltip" data-tip="Current global definition_version">
-                                    Version {{ $achievement->definition_version }}
+                                <span class="tooltip" data-tip="Current global achievements.version">
+                                    Version {{ $achievement->version }}
                                 </span>
                                 <span class="tooltip" data-tip="Client-visible achievement point value">
                                     {{ number_format((int) $achievement->points) }} points
@@ -222,7 +164,7 @@
                                 <div>
                                     <div class="font-semibold">Durable version mismatch</div>
                                     <p class="text-sm">
-                                        Definition version is {{ $achievement->definition_version }}. With
+                                        Definition version is {{ $achievement->version }}. With
                                         <code>reset_on_version_change={{ (int) $achievement->reset_on_version_change }}</code>,
                                         the runtime may reset stale state during load or retain it according to content policy.
                                         Inspect each row before changing it.
@@ -248,7 +190,7 @@
                                     </div>
                                     <div class="text-xs text-base-content/60 tooltip"
                                         data-tip="Version copied into character_achievements when completion was persisted">
-                                        Persisted version {{ $completion->definition_version }}
+                                        Persisted version {{ $completion->version }}
                                     </div>
                                 @else
                                     <div class="mt-2 text-base-content/60">No completion row</div>
@@ -274,7 +216,7 @@
                                 <div class="mt-2 text-sm">
                                     {{ $achievement->reward_ledgers->count() }} reward ledgers ·
                                     {{ $achievement->reward_selections->count() }} selections ·
-                                    {{ $achievement->pending_mutations->count() }} mutations
+                                    {{ $achievement->pending_updates->count() }} queued updates
                                 </div>
                             </div>
                         </div>
@@ -300,14 +242,14 @@
                                 @if ($isOnline)
                                     <span class="text-xs text-error">Log out before force-completing.</span>
                                 @elseif (!$achievement->enabled)
-                                    <span class="text-xs text-error">Disabled definitions are unavailable to runtime mutation.</span>
+                                    <span class="text-xs text-error">Disabled definitions are unavailable to runtime state updates.</span>
                                 @endif
                             @endif
 
                             @if ($hasCoreState)
                                 <form method="POST"
                                     action="{{ route('characters.achievements.reset', [$character->id, $achievement->id]) }}"
-                                    onsubmit="return confirm('Reset completion, component progress, and ALL queued mutations for this achievement? Reward selections and reward ledgers will be preserved. This cannot be undone from the editor.')">
+                                    onsubmit="return confirm('Reset completion, component progress, and ALL queued updates for this achievement? Reward selections and reward ledgers will be preserved. This cannot be undone from the editor.')">
                                     @csrf
                                     @method('DELETE')
                                     <input type="hidden" name="confirm_reset" value="1">
@@ -321,7 +263,7 @@
                             @if ($hasRewardState)
                                 <form method="POST"
                                     action="{{ route('characters.achievements.reset', [$character->id, $achievement->id]) }}"
-                                    onsubmit="return confirm('HIGH RISK: Reset completion, progress, queued mutations, reward selections, AND individual reward ledgers? Recompletion can grant rewards again and may duplicate previously delivered items or currency.')">
+                                    onsubmit="return confirm('HIGH RISK: Reset completion, progress, queued updates, reward selections, AND individual reward ledgers? Recompletion can grant rewards again and may duplicate previously delivered items or currency.')">
                                     @csrf
                                     @method('DELETE')
                                     <input type="hidden" name="confirm_reset" value="1">
@@ -383,14 +325,14 @@
                                                 @endif
                                             </div>
                                             <div class="mt-2 font-medium">
-                                                {{ $component->description ?: '(No component description)' }}
+                                                {{ $component->name ?: '(No component name)' }}
                                             </div>
-                                            @if ($component->description_2)
-                                                <div class="mt-1 text-sm text-base-content/65">{{ $component->description_2 }}</div>
+                                            @if ($component->description)
+                                                <div class="mt-1 text-sm text-base-content/65">{{ $component->description }}</div>
                                             @endif
                                             <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-base-content/65">
                                                 <span class="tooltip"
-                                                    data-tip="Count from achievement_component_counts, normalized to at least 1">
+                                                    data-tip="Default count from achievement_associations, normalized to at least 1">
                                                     Presentation count: {{ number_format($component->presentation_required_count) }}
                                                 </span>
                                                 <span class="tooltip"
@@ -405,7 +347,7 @@
                                                 @if ($componentProgress)
                                                     <span class="tooltip"
                                                         data-tip="Unix updated_at {{ (int) $componentProgress->updated_at }}; persisted sequence {{ $componentProgress->component_sequence }}">
-                                                        Row version {{ $componentProgress->definition_version }}
+                                                        Row version {{ $componentProgress->version }}
                                                     </span>
                                                 @endif
                                             </div>
@@ -433,7 +375,7 @@
                                                 </div>
                                             @elseif (!$achievement->enabled)
                                                 <div role="alert" class="alert alert-soft alert-error py-2 text-xs">
-                                                    Enable the definition before runtime-compatible mutation.
+                                                    Enable the definition before runtime-compatible state updates.
                                                 </div>
                                             @elseif ($component->effective_count_conflict)
                                                 <div role="alert" class="alert alert-soft alert-error py-2 text-xs">
@@ -537,8 +479,9 @@
                                 <h3 class="text-base font-semibold">Individual reward ledgers</h3>
                                 <p class="text-xs text-base-content/65">
                                     Status 0 is claimed/in flight and may be ambiguous after interruption; status 1 is
-                                    durably granted; only status 2 is automatically retryable. Manual retry override is
-                                    deliberately individual and requires accepting duplicate-delivery risk.
+                                    durably granted; only status 2 is automatically retryable. Automatic grants may be
+                                    overridden individually. Selectable grants must be retried through their owning
+                                    selection so selected and common rows are reconciled together.
                                 </p>
                             </div>
 
@@ -547,7 +490,7 @@
                                     <table class="table table-sm">
                                         <thead class="bg-base-200">
                                             <tr>
-                                                <th title="Canonical achievement_rewards.reward_id">Reward</th>
+                                                <th title="Canonical rewards.reward_id">Reward</th>
                                                 <th title="Grant kind and authored data identity">Definition</th>
                                                 <th title="Character-scoped idempotency ledger status">Ledger status</th>
                                                 <th title="Delivery claims started and latest attempt diagnostic">Attempts / diagnostic</th>
@@ -570,8 +513,8 @@
                                                     <td>
                                                         <span class="font-mono">{{ $reward->reward_id }}</span>
                                                         <span class="block text-xs text-base-content/60 tooltip"
-                                                            data-tip="Global sequence controls delivery/display order">
-                                                            sequence {{ $reward->sequence }} · {{ $reward->enabled ? 'enabled' : 'disabled' }}
+                                                            data-tip="Sequence is scoped to the automatic source or selected option">
+                                                            {{ $reward->delivery }} · sequence {{ $reward->sequence }} · {{ $reward->enabled ? 'enabled' : 'disabled' }}
                                                         </span>
                                                     </td>
                                                     <td>
@@ -579,7 +522,7 @@
                                                             {{ \App\Support\Achievements\AchievementMetadata::rewardTypeLabel((int) $reward->reward_type) }}
                                                         </span>
                                                         <span class="block text-xs text-base-content/65">
-                                                            data {{ $reward->reward_data_id }} · amount {{ number_format((int) $reward->amount) }}
+                                                            data {{ $reward->reward_data_id }} · amount {{ $reward->amount }}
                                                         </span>
                                                         @if ($reward->description)
                                                             <span class="block text-xs">{{ $reward->description }}</span>
@@ -616,7 +559,7 @@
                                                         @endif
                                                     </td>
                                                     <td class="text-right">
-                                                        @if ($ledger && in_array($ledgerStatus, [0, 2], true))
+                                                        @if ($ledger && $reward->delivery === 'automatic' && in_array($ledgerStatus, [0, 2], true))
                                                             <form method="POST"
                                                                 action="{{ route('characters.achievements.rewards.retry', [
                                                                     $character->id,
@@ -633,6 +576,11 @@
                                                                     Mark Retryable
                                                                 </button>
                                                             </form>
+                                                        @elseif ($ledger && $reward->delivery === 'selectable' && in_array($ledgerStatus, [0, 2], true))
+                                                            <span class="text-xs text-info tooltip"
+                                                                data-tip="Use the owning selection's retry action so selected and common grants move together">
+                                                                Retry selection
+                                                            </span>
                                                         @else
                                                             <span class="text-xs text-base-content/45 tooltip"
                                                                 data-tip="Granted rows are protected; missing rows have nothing to retry">—</span>
@@ -649,7 +597,7 @@
                                                     <td class="font-mono">{{ $ledger->reward_id }}</td>
                                                     <td>
                                                         <span class="badge badge-error badge-outline tooltip"
-                                                            data-tip="The canonical achievement_rewards row is missing or no longer belongs to this definition">
+                                                            data-tip="The canonical rewards row is missing or no longer maps to this achievement source">
                                                             Orphan ledger
                                                         </span>
                                                     </td>
@@ -670,7 +618,7 @@
                                 </div>
                             @else
                                 <div class="rounded-box border border-dashed border-base-300 p-3 text-sm text-base-content/55">
-                                    No automatic reward definitions or individual ledgers.
+                                    No mapped reward definitions or individual ledgers.
                                 </div>
                             @endif
                         </section>
@@ -692,10 +640,14 @@
                                     $selectedOption = $selection
                                         ? $set->options->firstWhere('option_id', $selection->selected_option_id)
                                         : null;
-                                    $canRetrySelection = $selection && (
-                                        in_array($selectionStatus, [2, 3], true)
-                                        || ($selectionStatus === 0 && (int) $selection->selected_option_id !== 0)
-                                    );
+                                    $canRetrySelection = $selection
+                                        && (int) $set->source_enabled === 1
+                                        && (int) $set->enabled === 1
+                                        && (int) $selection->selected_option_id !== 0
+                                        && $selectedOption
+                                        && (int) $selectedOption->enabled === 1
+                                        && (int) $selectedOption->common_to_all === 0
+                                        && in_array($selectionStatus, [0, 2, 3], true);
                                 @endphp
                                 <div class="rounded-box border border-base-300 p-3">
                                     <div class="flex flex-wrap items-start justify-between gap-3">
@@ -703,10 +655,14 @@
                                             <div class="flex flex-wrap items-center gap-2">
                                                 <span class="font-semibold">{{ $set->title ?: 'Selectable reward' }}</span>
                                                 <span class="badge badge-sm badge-outline tooltip"
-                                                    data-tip="achievement_reward_sets.reward_set_id">Set {{ $set->reward_set_id }}</span>
+                                                    data-tip="reward_sets.reward_set_id">Set {{ $set->reward_set_id }}</span>
                                                 <span class="badge badge-sm {{ $set->enabled ? 'badge-info' : 'badge-neutral' }} badge-soft tooltip"
                                                     data-tip="Only enabled sets and enabled options are loaded">
                                                     {{ $set->enabled ? 'Enabled' : 'Disabled' }}
+                                                </span>
+                                                <span class="badge badge-sm {{ $set->source_enabled ? 'badge-info' : 'badge-neutral' }} badge-outline tooltip"
+                                                    data-tip="This achievement's independent reward_sources.enabled state">
+                                                    Source {{ $set->source_enabled ? 'enabled' : 'disabled' }}
                                                 </span>
                                             </div>
                                             @if ($selection)
@@ -739,12 +695,12 @@
                                                     $achievement->id,
                                                     $set->reward_set_id,
                                                 ]) }}"
-                                                onsubmit="return confirm('Mark this ONE reward selection retryable? An interrupted or ambiguous selection may already have delivered entries. Inspect every individual reward ledger and accept duplicate-delivery risk before continuing.')">
+                                                onsubmit="return confirm('Mark this reward selection retryable? The selected option and enabled common grants are validated, and their in-flight individual ledgers are moved to retryable failure atomically. Some grants may already have been delivered, so inspect the character and accept duplicate-delivery risk before continuing.')">
                                                 @csrf
                                                 @method('PATCH')
                                                 <input type="hidden" name="confirm_retry" value="1">
                                                 <button type="submit" class="btn btn-xs btn-warning tooltip"
-                                                    data-tip="Set this selection status to retryable; individual entry ledgers are unchanged">
+                                                    data-tip="Validate the active set and atomically mark the selection plus relevant in-flight grant ledgers retryable">
                                                     Mark Selection Retryable
                                                 </button>
                                             </form>
@@ -828,7 +784,7 @@
 
                         <section class="space-y-3">
                             <div>
-                                <h3 class="text-base font-semibold">Pending cross-zone mutations</h3>
+                                <h3 class="text-base font-semibold">Pending cross-zone updates</h3>
                                 <p class="text-xs text-base-content/65">
                                     Advance requests are monotonic floors, not exact assignments. Blocked rows retain
                                     diagnostics. Retrying clears status, lease timestamp, and diagnostic but preserves
@@ -836,12 +792,12 @@
                                 </p>
                             </div>
 
-                            @if ($achievement->pending_mutations->isNotEmpty())
+                            @if ($achievement->pending_updates->isNotEmpty())
                                 <div class="overflow-x-auto rounded-box border border-base-300">
                                     <table class="table table-sm">
                                         <thead class="bg-base-200">
                                             <tr>
-                                                <th title="Auto-increment queue identity">Mutation</th>
+                                                <th title="Auto-increment queue identity">Update</th>
                                                 <th title="Original character/group/raid/dynamic-zone/shared-task scope">Source</th>
                                                 <th title="Operation 0 advances a floor; operation 1 completes">Request</th>
                                                 <th title="Definition version captured by the source zone; exact match is required">Version</th>
@@ -851,83 +807,83 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @foreach ($achievement->pending_mutations as $mutation)
+                                            @foreach ($achievement->pending_updates as $update)
                                                 @php
-                                                    $mutationStatus = (int) $mutation->status;
-                                                    $mutationOperation = (int) $mutation->operation;
-                                                    $mutationStatusClass = match ($mutationStatus) {
+                                                    $updateStatus = (int) $update->status;
+                                                    $updateOperation = (int) $update->operation;
+                                                    $updateStatusClass = match ($updateStatus) {
                                                         0 => 'badge-info',
                                                         1 => 'badge-error',
                                                         2 => 'badge-warning',
                                                         default => 'badge-neutral',
                                                     };
                                                 @endphp
-                                                <tr class="{{ (int) $mutation->definition_version !== (int) $achievement->definition_version ? 'bg-error/5' : '' }}">
+                                                <tr class="{{ (int) $update->version !== (int) $achievement->version ? 'bg-error/5' : '' }}">
                                                     <td>
-                                                        <span class="font-mono">{{ $mutation->mutation_id }}</span>
+                                                        <span class="font-mono">{{ $update->update_id }}</span>
                                                         <span class="block text-xs text-base-content/60 tooltip"
-                                                            data-tip="Unix created_at {{ $mutation->created_at }}">
-                                                            {{ \Carbon\Carbon::createFromTimestamp((int) $mutation->created_at)->format('Y-m-d H:i:s') }}
+                                                            data-tip="Unix created_at {{ $update->created_at }}">
+                                                            {{ \Carbon\Carbon::createFromTimestamp((int) $update->created_at)->format('Y-m-d H:i:s') }}
                                                         </span>
                                                     </td>
                                                     <td>
-                                                        {{ $metadata['mutation_target_types'][(int) $mutation->source_target_type] ?? "Unknown ({$mutation->source_target_type})" }}
-                                                        <span class="block font-mono text-xs">{{ $mutation->source_target_id }}</span>
+                                                        {{ $metadata['update_target_types'][(int) $update->source_target_type] ?? "Unknown ({$update->source_target_type})" }}
+                                                        <span class="block font-mono text-xs">{{ $update->source_target_id }}</span>
                                                     </td>
                                                     <td>
                                                         <span class="font-medium">
-                                                            {{ $metadata['mutation_operations'][$mutationOperation] ?? "Unknown ({$mutationOperation})" }}
+                                                            {{ $metadata['update_operations'][$updateOperation] ?? "Unknown ({$updateOperation})" }}
                                                         </span>
-                                                        @if ($mutationOperation === \App\Support\Achievements\AchievementMetadata::MUTATION_OPERATION_ADVANCE)
+                                                        @if ($updateOperation === \App\Support\Achievements\AchievementMetadata::UPDATE_OPERATION_ADVANCE)
                                                             <span class="block font-mono text-xs">
-                                                                type {{ $mutation->component_type }} · component {{ $mutation->component_id }} · floor {{ $mutation->requested_value }}
+                                                                type {{ $update->component_type }} · component {{ $update->component_id }} · floor {{ $update->requested_value }}
                                                             </span>
                                                         @else
                                                             <span class="block text-xs text-base-content/60">Whole achievement</span>
                                                         @endif
                                                     </td>
                                                     <td>
-                                                        <span class="font-mono">{{ $mutation->definition_version }}</span>
-                                                        @if ((int) $mutation->definition_version !== (int) $achievement->definition_version)
+                                                        <span class="font-mono">{{ $update->version }}</span>
+                                                        @if ((int) $update->version !== (int) $achievement->version)
                                                             <span class="block text-xs text-error tooltip"
                                                                 data-tip="Retrying without correcting content/version will block again">
-                                                                current {{ $achievement->definition_version }}
+                                                                current {{ $achievement->version }}
                                                             </span>
                                                         @endif
                                                     </td>
                                                     <td>
-                                                        <span class="badge badge-sm {{ $mutationStatusClass }} badge-soft tooltip"
-                                                            data-tip="Processing rows become reclaimable after {{ $metadata['mutation_processing_lease_seconds'] }} seconds">
-                                                            {{ $metadata['mutation_statuses'][$mutationStatus] ?? "Unknown ({$mutationStatus})" }}
+                                                        <span class="badge badge-sm {{ $updateStatusClass }} badge-soft tooltip"
+                                                            data-tip="Processing rows become reclaimable after {{ $metadata['update_processing_lease_seconds'] }} seconds">
+                                                            {{ $metadata['update_statuses'][$updateStatus] ?? "Unknown ({$updateStatus})" }}
                                                         </span>
                                                     </td>
                                                     <td>
-                                                        <span class="font-mono">{{ $mutation->attempt_count }}</span>
-                                                        @if ($mutation->last_error)
+                                                        <span class="font-mono">{{ $update->attempt_count }}</span>
+                                                        @if ($update->last_error)
                                                             <span class="mt-1 block max-w-sm break-words text-xs text-error tooltip"
                                                                 data-tip="Most recent blocked or retryable diagnostic">
-                                                                {{ $mutation->last_error }}
+                                                                {{ $update->last_error }}
                                                             </span>
                                                         @else
                                                             <span class="block text-xs text-base-content/50">No diagnostic</span>
                                                         @endif
-                                                        @if ((int) $mutation->last_attempt_at > 0)
+                                                        @if ((int) $update->last_attempt_at > 0)
                                                             <span class="block text-xs text-base-content/55 tooltip"
-                                                                data-tip="Unix last_attempt_at {{ $mutation->last_attempt_at }}">
-                                                                last {{ \Carbon\Carbon::createFromTimestamp((int) $mutation->last_attempt_at)->format('Y-m-d H:i:s') }}
+                                                                data-tip="Unix last_attempt_at {{ $update->last_attempt_at }}">
+                                                                last {{ \Carbon\Carbon::createFromTimestamp((int) $update->last_attempt_at)->format('Y-m-d H:i:s') }}
                                                             </span>
                                                         @endif
                                                     </td>
                                                     <td class="text-right">
                                                         <div class="flex justify-end gap-1">
-                                                            @if ($mutationStatus === \App\Support\Achievements\AchievementMetadata::CHARACTER_MUTATION_STATUS_BLOCKED)
+                                                            @if ($updateStatus === \App\Support\Achievements\AchievementMetadata::CHARACTER_UPDATE_STATUS_BLOCKED)
                                                                 <form method="POST"
-                                                                    action="{{ route('characters.achievements.mutations.retry', [
+                                                                    action="{{ route('characters.achievements.updates.retry', [
                                                                         $character->id,
                                                                         $achievement->id,
-                                                                        $mutation->mutation_id,
+                                                                        $update->update_id,
                                                                     ]) }}"
-                                                                    onsubmit="return confirm('Retry this blocked mutation? Its original definition version and requested value are preserved. If the underlying content problem remains, it will block again.')">
+                                                                    onsubmit="return confirm('Retry this blocked update? Its original definition version and requested value are preserved. If the underlying content problem remains, it will block again.')">
                                                                     @csrf
                                                                     @method('PATCH')
                                                                     <button type="submit"
@@ -937,21 +893,31 @@
                                                                     </button>
                                                                 </form>
                                                             @endif
-                                                            <form method="POST"
-                                                                action="{{ route('characters.achievements.mutations.discard', [
-                                                                    $character->id,
-                                                                    $achievement->id,
-                                                                    $mutation->mutation_id,
-                                                                ]) }}"
-                                                                onsubmit="return confirm('Discard this queued mutation permanently? The authored cross-zone request will be deleted WITHOUT applying its progress or completion. This cannot be undone.')">
-                                                                @csrf
-                                                                @method('DELETE')
-                                                                <input type="hidden" name="confirm_discard" value="1">
-                                                                <button type="submit" class="btn btn-xs btn-error tooltip"
-                                                                    data-tip="Delete only this character/achievement/mutation tuple">
-                                                                    Discard
-                                                                </button>
-                                                            </form>
+                                                            @if (in_array($updateStatus, [
+                                                                \App\Support\Achievements\AchievementMetadata::CHARACTER_UPDATE_STATUS_PENDING,
+                                                                \App\Support\Achievements\AchievementMetadata::CHARACTER_UPDATE_STATUS_BLOCKED,
+                                                            ], true))
+                                                                <form method="POST"
+                                                                    action="{{ route('characters.achievements.updates.discard', [
+                                                                        $character->id,
+                                                                        $achievement->id,
+                                                                        $update->update_id,
+                                                                    ]) }}"
+                                                                    onsubmit="return confirm('Discard this queued update permanently? The authored cross-zone request will be deleted WITHOUT applying its progress or completion. This cannot be undone.')">
+                                                                    @csrf
+                                                                    @method('DELETE')
+                                                                    <input type="hidden" name="confirm_discard" value="1">
+                                                                    <button type="submit" class="btn btn-xs btn-error tooltip"
+                                                                        data-tip="Delete only this pending or blocked character/achievement/update tuple">
+                                                                        Discard
+                                                                    </button>
+                                                                </form>
+                                                            @else
+                                                                <span class="text-xs text-warning tooltip"
+                                                                    data-tip="The runtime owns this row while its processing lease is active">
+                                                                    Runtime lease active
+                                                                </span>
+                                                            @endif
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -961,7 +927,7 @@
                                 </div>
                             @else
                                 <div class="rounded-box border border-dashed border-base-300 p-3 text-sm text-base-content/55">
-                                    No pending, blocked, or leased mutations for this character and achievement.
+                                    No pending, blocked, or leased updates for this character and achievement.
                                 </div>
                             @endif
                         </section>
@@ -976,7 +942,7 @@
         </div>
 
         @if ($achievements->hasPages())
-            <div>{{ $achievements->links() }}</div>
+            <div class="mt-4">{{ $achievements->links() }}</div>
         @endif
     </div>
 @endsection

@@ -1,12 +1,12 @@
 <div class="space-y-4">
-    <div class="card bg-base-100 shadow">
+    <div class="card bg-base-200 card-sm shadow-sm">
         <div class="card-body">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <h2 class="card-title">Reward Grants</h2>
                     <p class="text-sm opacity-65">
-                        Unmapped rows grant automatically. Mapping a row to any option suppresses automatic delivery,
-                        even if the option or set is disabled.
+                        Grants come from the shared reward catalog. Unmapped rows use a source entry and grant automatically;
+                        mapped rows belong to this achievement's selectable set.
                     </p>
                 </div>
                 <button type="button" class="btn btn-sm btn-soft btn-success" @click="addReward()"
@@ -17,7 +17,7 @@
 
             <div class="space-y-3 mt-3">
                 <template x-for="(reward, rewardIndex) in editor.rewards" :key="reward._uid">
-                    <div class="rounded-box border border-base-content/10 bg-base-200 p-4">
+                    <div class="rounded-box border border-base-content/10 bg-base-300 p-4">
                         <input type="hidden" :name="`rewards[${rewardIndex}][reward_id]`" :value="reward.reward_id ?? ''">
                         <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
                             <div class="form-control md:col-span-2">
@@ -70,14 +70,14 @@
 
                             <div class="form-control md:col-span-2">
                                 <label class="label">
-                                    <span>Amount <x-ui.field-help text="Positive quantity granted. For item rewards this is the stack count; for currency, XP, and AA it is the awarded amount." /></span>
+                                    <span>Amount <x-ui.field-help text="Positive quantity. Runtime delivery limits depend on type: item 32,767; XP 4,294,967,295; AA/alternate currency 2,147,483,647; copper 2,147,483,647 platinum plus 999 copper; title exactly 1." /></span>
                                 </label>
                                 <input type="number" min="1" class="input w-full tabular-nums"
                                     :name="`rewards[${rewardIndex}][amount]`" x-model="reward.amount" required>
                             </div>
                             <div class="form-control md:col-span-1">
                                 <label class="label">
-                                    <span>Order <x-ui.field-help text="Unique sequence controlling deterministic reward display and delivery order within this achievement." /></span>
+                                    <span>Order <x-ui.field-help text="Delivery order within the automatic source, or within the selected option when mapped. Automatic sequences must be unique." /></span>
                                 </label>
                                 <input type="number" min="0" max="4294967295" class="input w-full tabular-nums"
                                     :name="`rewards[${rewardIndex}][sequence]`" x-model.number="reward.sequence" required>
@@ -128,7 +128,7 @@
         </div>
     </div>
 
-    <div class="card bg-base-100 shadow">
+    <div class="card bg-base-200 card-sm shadow-sm">
         <div class="card-body">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -136,12 +136,12 @@
                     <p class="text-sm opacity-65">Common rows are combined with exactly one enabled non-common choice.</p>
                 </div>
                 <label class="label cursor-pointer gap-3">
-                    <span>Use selectable rewards <x-ui.field-help text="Enables a choose-one reward graph with optional common grants. Turning this off removes the set when saved." /></span>
+                    <span>Use selectable rewards <x-ui.field-help text="Links this achievement source to a shared-catalog choose-one set. Turning this off detaches the source but preserves the reusable set and its character ledgers." /></span>
                     <input type="checkbox" class="toggle toggle-success" :checked="editor.reward_set.present"
                         @change="
                             if ($event.target.checked) {
                                 editor.reward_set.present = true;
-                            } else if (confirm('Remove the selectable reward set and all of its option mappings when this definition is saved? Character selection ledgers are preserved as history, and mapped grants must be reviewed before save.')) {
+                            } else if (confirm('Detach this achievement from its selectable reward set? The reusable reward catalog and character selection ledgers are preserved, and mapped grants must be reviewed before save.')) {
                                 editor.reward_set.present = false;
                             } else {
                                 $event.target.checked = true;
@@ -162,16 +162,21 @@
                         <input type="number" min="1" max="4294967295" class="input w-full tabular-nums"
                             name="reward_set[reward_set_id]" x-model.number="editor.reward_set.reward_set_id" required>
                     </div>
-                    <div class="form-control md:col-span-7">
+                    <div class="form-control md:col-span-5">
                         <label class="label">
                             <span>Prompt / title <x-ui.field-help text="Player-facing heading shown when the client asks the character to choose a reward." /></span>
                         </label>
                         <input class="input w-full" maxlength="255" name="reward_set[title]" x-model="editor.reward_set.title">
                     </div>
-                    <label class="label cursor-pointer justify-start gap-3 md:col-span-3 min-h-12">
+                    <label class="label cursor-pointer justify-start gap-3 md:col-span-2 min-h-12">
                         <input type="checkbox" class="toggle toggle-success" x-model="editor.reward_set.enabled">
                         <input type="hidden" name="reward_set[enabled]" :value="editor.reward_set.enabled ? 1 : 0">
                         <span>Set enabled <x-ui.field-help text="Only enabled sets may be selected. An enabled set requires at least one enabled non-common option." /></span>
+                    </label>
+                    <label class="label cursor-pointer justify-start gap-3 md:col-span-3 min-h-12">
+                        <input type="checkbox" class="toggle toggle-info" x-model="editor.reward_set.source_enabled">
+                        <input type="hidden" name="reward_set[source_enabled]" :value="editor.reward_set.source_enabled ? 1 : 0">
+                        <span>Source link enabled <x-ui.field-help text="Controls only this achievement's reward_sources row. It is distinct from the reusable set's enabled state. A disabled definition or source link can safely stage incomplete selectable content; publish all three layers only after every active option has a valid grant." /></span>
                     </label>
                 </div>
 

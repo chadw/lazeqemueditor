@@ -25,7 +25,7 @@ class CharacterAchievementProgress extends BaseModel
         'component_id',
         'current_count',
         'completed',
-        'definition_version',
+        'version',
         'updated_at',
     ];
 

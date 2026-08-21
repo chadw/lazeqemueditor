@@ -8,7 +8,7 @@ class AchievementComponentCount extends BaseModel
 {
     protected $connection = 'eqemu';
 
-    protected $table = 'achievement_component_counts';
+    protected $table = 'achievement_associations';
 
     protected $primaryKey = 'component_id';
 

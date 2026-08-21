@@ -2,19 +2,21 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
-//use Kyslik\ColumnSortable\Sortable;
-use App\Models\FactionList;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+// use Kyslik\ColumnSortable\Sortable;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class CharacterData extends BaseModel
 {
-    //use Sortable;
+    // use Sortable;
 
     protected $connection = 'eqemu';
+
     protected $table = 'character_data';
+
     public $timestamps = false;
+
     protected $guarded = [];
 
     /* public $sortable = [
@@ -85,9 +87,9 @@ class CharacterData extends BaseModel
         return $this->hasMany(CharacterAchievementRewardSelection::class, 'character_id', 'id');
     }
 
-    public function achievementPendingMutations(): HasMany
+    public function achievementPendingUpdates(): HasMany
     {
-        return $this->hasMany(CharacterAchievementPendingMutation::class, 'character_id', 'id');
+        return $this->hasMany(CharacterAchievementPendingUpdate::class, 'character_id', 'id');
     }
 
     public function guildMember(): HasOne
@@ -201,14 +203,14 @@ class CharacterData extends BaseModel
         $char_id = $this->id;
 
         return DataBucket::where(function ($query) use ($char_id) {
-            $query->where('key', 'like', $char_id . '-%')
-                ->orWhere('key', 'like', '%-' . $char_id);
+            $query->where('key', 'like', $char_id.'-%')
+                ->orWhere('key', 'like', '%-'.$char_id);
         });
     }
 
     public function hasQuestGlobal(string $name)
     {
-        return $this->questGlobals->first(fn($q) => $q->name === $name);
+        return $this->questGlobals->first(fn ($q) => $q->name === $name);
     }
 
     public function getMemmedSpellMapAttribute(): array
@@ -218,13 +220,15 @@ class CharacterData extends BaseModel
 
         foreach ($mems as $m) {
             $slot = $m->slot ?? ($m->slot_id ?? ($m->slotnum ?? ($m->snum ?? null)));
-            if ($slot === null) continue;
+            if ($slot === null) {
+                continue;
+            }
             if (is_numeric($slot) && $slot >= 0 && $slot < 12) {
                 $idx = intval($slot) + 1;
             } else {
                 $idx = intval($slot);
             }
-            if ($idx >= 1 && $idx <= 12 && !isset($map[$idx])) {
+            if ($idx >= 1 && $idx <= 12 && ! isset($map[$idx])) {
                 $map[$idx] = $m;
             }
         }

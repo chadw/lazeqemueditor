@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Http\Requests;
 
-use App\Http\Requests\DiscardCharacterAchievementMutationRequest;
+use App\Http\Requests\DiscardCharacterAchievementUpdateRequest;
 use App\Http\Requests\ForceCompleteCharacterAchievementRequest;
 use App\Http\Requests\MarkCharacterAchievementRewardRetryableRequest;
 use App\Http\Requests\ResetCharacterAchievementRequest;
@@ -20,7 +20,7 @@ class CharacterAchievementRequestTest extends TestCase
             [ForceCompleteCharacterAchievementRequest::class, 'confirm_offline_completion'],
             [ResetCharacterAchievementRequest::class, 'confirm_reset'],
             [MarkCharacterAchievementRewardRetryableRequest::class, 'confirm_retry'],
-            [DiscardCharacterAchievementMutationRequest::class, 'confirm_discard'],
+            [DiscardCharacterAchievementUpdateRequest::class, 'confirm_discard'],
         ];
 
         foreach ($cases as [$requestClass, $field]) {

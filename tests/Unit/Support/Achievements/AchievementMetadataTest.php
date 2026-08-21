@@ -57,7 +57,7 @@ class AchievementMetadataTest extends TestCase
             0 => 'Pending',
             1 => 'Blocked',
             2 => 'Processing',
-        ], AchievementMetadata::CHARACTER_MUTATION_STATUSES);
+        ], AchievementMetadata::CHARACTER_UPDATE_STATUSES);
 
         $this->assertSame([
             0 => 'Character',
@@ -65,9 +65,9 @@ class AchievementMetadataTest extends TestCase
             2 => 'Raid',
             3 => 'Dynamic Zone',
             4 => 'Shared Task',
-        ], AchievementMetadata::MUTATION_TARGET_TYPES);
+        ], AchievementMetadata::UPDATE_TARGET_TYPES);
 
-        $this->assertSame(60, AchievementMetadata::MUTATION_PROCESSING_LEASE_SECONDS);
+        $this->assertSame(60, AchievementMetadata::UPDATE_PROCESSING_LEASE_SECONDS);
     }
 
     public function test_progress_mode_matrix_rejects_increment_for_replayed_or_absolute_events(): void
@@ -84,11 +84,11 @@ class AchievementMetadataTest extends TestCase
             AchievementMetadata::PROGRESS_BOOLEAN,
         ];
 
-        foreach ([0, 2, 3, 5, 6, 8, 12] as $eventType) {
+        foreach ([0, 2, 3, 6, 8, 12] as $eventType) {
             $this->assertSame($allModes, AchievementMetadata::allowedProgressModes($eventType));
         }
 
-        foreach ([1, 4, 7, 9, 10, 11, 13] as $eventType) {
+        foreach ([1, 4, 5, 7, 9, 10, 11, 13] as $eventType) {
             $this->assertSame(
                 $nonIncrementModes,
                 AchievementMetadata::allowedProgressModes($eventType)
@@ -186,6 +186,6 @@ class AchievementMetadataTest extends TestCase
         $this->assertSame('Unknown (99)', AchievementMetadata::eventLabel(99));
         $this->assertSame('Unknown (99)', AchievementMetadata::characterRewardStatusLabel(99));
         $this->assertSame('Unknown (99)', AchievementMetadata::characterSelectionStatusLabel(99));
-        $this->assertSame('Unknown (99)', AchievementMetadata::characterMutationStatusLabel(99));
+        $this->assertSame('Unknown (99)', AchievementMetadata::characterUpdateStatusLabel(99));
     }
 }

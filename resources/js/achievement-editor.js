@@ -10,7 +10,7 @@ export default function registerAchievementEditor(Alpine) {
         tab: 'general',
         editor: clone(config.editor),
         metadata: clone(config.metadata),
-        initialDefinitionVersion: 1,
+        initialDefinitionVersion: 0,
         nextUid: 1,
 
         init() {
@@ -39,6 +39,7 @@ export default function registerAchievementEditor(Alpine) {
                     reward_set_id: suggestedSetId,
                     title: '',
                     enabled: 1,
+                    source_enabled: 1,
                     options: [],
                 };
             } else {
@@ -48,7 +49,7 @@ export default function registerAchievementEditor(Alpine) {
                     : [];
             }
 
-            this.initialDefinitionVersion = number(this.editor.definition_version, 1);
+            this.initialDefinitionVersion = number(this.editor.version, 0);
             this.decorateRows();
 
             if (this.editor.associations.length === 0 && number(this.editor.enabled) === 1) {
@@ -99,8 +100,8 @@ export default function registerAchievementEditor(Alpine) {
                 component_type: 1,
                 sequence: this.nextSequence(this.editor.components),
                 component_id: this.nextComponentId(),
+                name: '',
                 description: '',
-                description_2: '',
                 presentation_count: 1,
                 criteria: [],
             });
@@ -309,7 +310,7 @@ export default function registerAchievementEditor(Alpine) {
                 2: 'Adds credit for a specific NPC type kill; there is no historical replay.',
                 3: 'Adds credit for a base NPC race kill; there is no historical replay.',
                 4: 'Requires an exact task ID and replays durable completed-task history.',
-                5: 'Evaluates the destination zone and reconciles only the current zone.',
+                5: 'Evaluates the destination zone and reconciles only the current zone. Increment mode is not accepted.',
                 6: 'Counts quantities transferred successfully from NPC corpses.',
                 7: 'Reconciles durable inventory, bank, shared bank, keyring, augments, bags, and cursor state.',
                 8: 'Counts successful combines for the selected recipe.',
@@ -332,7 +333,7 @@ export default function registerAchievementEditor(Alpine) {
             criterion.target_id2 = [7, 12, 13].includes(event) ? number(criterion.target_id2) : 0;
 
             if ([1, 10].includes(event)) criterion.target_id = 0;
-            if ([1, 4, 7, 9, 10, 11, 13].includes(event) && number(criterion.progress_mode) === 0) {
+            if ([1, 4, 5, 7, 9, 10, 11, 13].includes(event) && number(criterion.progress_mode) === 0) {
                 criterion.progress_mode = 3;
             }
             if ([1, 7, 9, 10, 13].includes(event) && number(criterion.target_value) < 1) {
@@ -400,6 +401,11 @@ export default function registerAchievementEditor(Alpine) {
         validationIssues() {
             const issues = [];
             const push = (level, message) => issues.push({ level, message });
+            const utf8Bytes = (value) => new TextEncoder().encode(String(value ?? '')).length;
+
+            if (utf8Bytes(this.editor.description) > 65535) {
+                push('error', 'Achievement description exceeds the MySQL TEXT limit of 65,535 UTF-8 bytes.');
+            }
 
             if (!this.editor.associations.length || this.editor.associations.some((row) => !number(row.category_id))) {
                 push('error', 'Every enabled definition needs at least one valid category association.');
@@ -419,6 +425,12 @@ export default function registerAchievementEditor(Alpine) {
                     push('error', `Component ID ${componentId} uses conflicting global presentation counts.`);
                 }
                 componentCounts.set(componentId, presentationCount);
+                if (utf8Bytes(component.name) > 65535) {
+                    push('error', `Component ${component.component_id} name exceeds 65,535 UTF-8 bytes.`);
+                }
+                if (utf8Bytes(component.description) > 65535) {
+                    push('error', `Component ${component.component_id} description exceeds 65,535 UTF-8 bytes.`);
+                }
 
                 const enabled = component.criteria.filter((criterion) => number(criterion.enabled) === 1);
                 if (number(component.component_type) === 3 && enabled.length) {
@@ -453,7 +465,7 @@ export default function registerAchievementEditor(Alpine) {
                     if (event === 4 && target === 0) push('error', `Component ${component.component_id} needs an exact task ID.`);
                     if (event === 12 && target === 0) push('error', `Component ${component.component_id} needs a nonzero canonical NPC-name hash.`);
                     if ([1, 10].includes(event) && target !== 0) push('error', `Component ${component.component_id} must use target ID 0 for this event.`);
-                    if (mode === 0 && [1, 4, 7, 9, 10, 11, 13].includes(event)) {
+                    if (mode === 0 && [1, 4, 5, 7, 9, 10, 11, 13].includes(event)) {
                         push('error', `Component ${component.component_id} cannot increment a reconciled absolute or one-time event.`);
                     }
                     if (mode === 3 && [1, 7, 9, 10, 13].includes(event) && targetValue < 1) {
@@ -466,18 +478,67 @@ export default function registerAchievementEditor(Alpine) {
                 push('warning', 'This definition has no enabled Required criterion and cannot complete through automatic evaluation.');
             }
 
-            const rewardSequences = new Set();
+            const automaticRewardSequences = new Set();
             this.editor.rewards.forEach((reward) => {
                 const sequence = number(reward.sequence);
-                if (rewardSequences.has(sequence)) push('error', `Duplicate reward sequence ${sequence}.`);
-                rewardSequences.add(sequence);
+                const optionId = String(reward.option_id ?? '');
+                if (optionId === '') {
+                    if (automaticRewardSequences.has(sequence)) {
+                        push('error', `Duplicate automatic reward sequence ${sequence}.`);
+                    }
+                    automaticRewardSequences.add(sequence);
+                }
                 if (number(reward.amount) < 1) push('error', `Reward sequence ${sequence} needs a positive amount.`);
-                if ([0, 4, 5].includes(number(reward.reward_type)) && number(reward.reward_data_id) < 1) {
-                    push('error', `Reward sequence ${sequence} needs a referenced data ID.`);
+
+                const option = optionId === ''
+                    ? null
+                    : this.editor.reward_set.options.find((candidate) =>
+                        String(candidate.option_id) === optionId);
+                const published = number(this.editor.enabled) === 1
+                    && number(reward.enabled) === 1
+                    && (
+                        optionId === ''
+                        || (
+                            this.editor.reward_set.present
+                            && number(this.editor.reward_set.enabled) === 1
+                            && number(this.editor.reward_set.source_enabled) === 1
+                            && number(option?.enabled) === 1
+                        )
+                    );
+                if (!published) return;
+
+                const type = number(reward.reward_type);
+                const dataId = number(reward.reward_data_id);
+                const amount = number(reward.amount);
+                if ([0, 4, 5].includes(type) && dataId < 1) {
+                    push('error', `Published reward sequence ${sequence} needs a referenced data ID.`);
+                }
+                if (type === 0 && amount > 32767) {
+                    push('error', `Published item reward sequence ${sequence} exceeds the 32,767 stack limit.`);
+                }
+                if (type === 1 && (dataId > 1 || amount > 4294967295)) {
+                    push('error', `Published XP reward sequence ${sequence} has an invalid mode or exceeds 4,294,967,295 XP.`);
+                }
+                if (type === 2 && (dataId !== 0 || amount > 2147483647)) {
+                    push('error', `Published AA reward sequence ${sequence} requires data 0 and at most 2,147,483,647 points.`);
+                }
+                if (type === 3 && (dataId !== 0 || amount > 2147483647999)) {
+                    push('error', `Published copper reward sequence ${sequence} requires data 0 and at most 2,147,483,647 platinum plus 999 copper.`);
+                }
+                if (type === 4 && amount > 2147483647) {
+                    push('error', `Published alternate-currency reward sequence ${sequence} exceeds 2,147,483,647.`);
+                }
+                if (type === 5 && (dataId > 2147483647 || amount !== 1)) {
+                    push('error', `Published title reward sequence ${sequence} requires a title ID at most 2,147,483,647 and amount 1.`);
                 }
             });
 
-            if (this.editor.reward_set.present && number(this.editor.reward_set.enabled) === 1) {
+            if (
+                this.editor.reward_set.present
+                && number(this.editor.enabled) === 1
+                && number(this.editor.reward_set.enabled) === 1
+                && number(this.editor.reward_set.source_enabled) === 1
+            ) {
                 const options = this.editor.reward_set.options.filter((option) => number(option.enabled) === 1);
                 if (!options.some((option) => number(option.common_to_all) === 0)) {
                     push('error', 'An enabled selectable reward set needs at least one enabled non-common choice.');
@@ -510,7 +571,7 @@ export default function registerAchievementEditor(Alpine) {
             });
 
             if (
-                this.initialDefinitionVersion !== number(this.editor.definition_version, 1)
+                this.initialDefinitionVersion !== number(this.editor.version, 0)
                 && number(this.editor.reset_on_version_change) === 1
             ) {
                 push('warning', 'The version changed with reset enabled. Character completion, progress, and reward ledgers will be cleared when the server rebuilds this definition.');

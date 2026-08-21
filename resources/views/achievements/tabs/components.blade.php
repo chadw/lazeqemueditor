@@ -67,24 +67,24 @@
                     </div>
                     <div class="form-control md:col-span-2">
                         <label class="label">
-                            <span>Presentation count <x-ui.field-help text="Count shown to the client. This is global for a component ID, so reused IDs must use the same value." /></span>
+                            <span>Presentation count <x-ui.field-help text="Default count from achievement_associations shown when no enabled criterion overrides it. Reused component IDs share this value." /></span>
                         </label>
                         <input type="number" min="1" max="4294967295" class="input w-full tabular-nums"
                             :name="`components[${componentIndex}][presentation_count]`" x-model.number="component.presentation_count" required>
                     </div>
                     <div class="form-control md:col-span-4">
                         <label class="label">
-                            <span>Primary description <x-ui.field-help text="Main client-facing explanation of this component's objective." /></span>
+                            <span>Name <x-ui.field-help text="Primary visible step text stored in achievement_components.name. Limited to 65,535 UTF-8 bytes." /></span>
                         </label>
-                        <input class="input w-full" :name="`components[${componentIndex}][description]`"
-                            x-model="component.description">
+                        <input class="input w-full" :name="`components[${componentIndex}][name]`"
+                            x-model="component.name">
                     </div>
                     <div class="form-control md:col-span-12">
                         <label class="label">
-                            <span>Secondary description <x-ui.field-help text="Optional second client-facing line for extra objective detail." /></span>
+                            <span>Description <x-ui.field-help text="Optional secondary client text stored in achievement_components.description. Limited to 65,535 UTF-8 bytes." /></span>
                         </label>
-                        <input class="input w-full" :name="`components[${componentIndex}][description_2]`"
-                            x-model="component.description_2">
+                        <input class="input w-full" :name="`components[${componentIndex}][description]`"
+                            x-model="component.description">
                     </div>
                 </div>
 
@@ -134,13 +134,16 @@
                                 </div>
                                 <div class="form-control md:col-span-3">
                                     <label class="label">
-                                        <span>Progress mode <x-ui.field-help text="Increment adds credit, Highest keeps the maximum, Set replaces progress, and Boolean evaluates a threshold." /></span>
+                                        <span>Progress mode <x-ui.field-help text="Increment adds credit, Highest keeps the maximum, Set replaces progress, and Boolean evaluates a threshold. Modes rejected by the selected event are disabled; Zone Enter cannot increment because current-zone reconciliation would repeat credit." /></span>
                                     </label>
                                     <select class="select w-full"
                                         :name="`components[${componentIndex}][criteria][${criterionIndex}][progress_mode]`"
                                         x-model.number="criterion.progress_mode" required>
                                         @foreach($metadata['progress_modes'] as $value => $label)
-                                            <option value="{{ $value }}">{{ $label }}</option>
+                                            <option value="{{ $value }}"
+                                                :disabled="!(metadata.allowed_progress_modes?.[Number(criterion.event_type)] ?? []).map(Number).includes({{ $value }})">
+                                                {{ $label }}
+                                            </option>
                                         @endforeach
                                     </select>
                                 </div>

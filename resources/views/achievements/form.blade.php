@@ -16,8 +16,8 @@
     $oldInput = session()->getOldInput();
     if ($oldInput) {
         foreach ([
-            'id', 'name', 'description', 'icon_id', 'points', 'reward_display', 'world_display_flag',
-            'definition_version', 'reset_on_version_change', 'enabled', 'associations', 'components',
+            'id', 'name', 'description', 'icon_id', 'points', 'has_reward', 'client_flag',
+            'version', 'reset_on_version_change', 'enabled', 'associations', 'components',
             'rewards', 'restrictions', 'suggested_reward_set_id',
             'suggested_component_id',
         ] as $key) {
@@ -74,7 +74,7 @@
     </x-ui.alert-warning>
 
     @if($errors->any())
-        <div role="alert" class="alert alert-error items-start">
+        <div role="alert" class="alert alert-soft alert-error items-start">
             <x-ui.icon name="warning" />
             <div>
                 <div class="font-semibold">The definition was not saved.</div>
@@ -89,47 +89,13 @@
         @csrf
         @if($formMethod !== 'POST') @method($formMethod) @endif
 
-        <div role="tablist" class="tabs tabs-box bg-base-100 shadow overflow-x-auto flex-nowrap justify-start sticky top-0 z-20">
-            <button type="button" role="tab" class="tab whitespace-nowrap" title="Name, presentation, score, enable state, and durable definition version"
-                :class="{ 'tab-active': tab === 'general' }" @click="tab = 'general'">General</button>
-            <button type="button" role="tab" class="tab whitespace-nowrap" title="Choose where this definition appears in the client category tree"
-                :class="{ 'tab-active': tab === 'categories' }" @click="tab = 'categories'">
-                Categories <span class="badge badge-xs ml-1" x-text="editor.associations.length"></span>
-            </button>
-            <button type="button" role="tab" class="tab whitespace-nowrap" title="Author client rows and the server events that advance them"
-                :class="{ 'tab-active': tab === 'components' }" @click="tab = 'components'">
-                Components <span class="badge badge-xs ml-1" x-text="editor.components.length"></span>
-            </button>
-            <button type="button" role="tab" class="tab whitespace-nowrap" title="Configure automatic grants and selectable reward graphs"
-                :class="{ 'tab-active': tab === 'rewards' }" @click="tab = 'rewards'">
-                Rewards <span class="badge badge-xs ml-1" x-text="editor.rewards.length"></span>
-            </button>
-            <button type="button" role="tab" class="tab whitespace-nowrap" title="Connect achievement completion to spell cast restrictions"
-                :class="{ 'tab-active': tab === 'restrictions' }" @click="tab = 'restrictions'">
-                Cast Restrictions <span class="badge badge-xs ml-1" x-text="editor.restrictions.length"></span>
-            </button>
-            <button type="button" role="tab" class="tab whitespace-nowrap" title="Review live authoring checks before saving and reloading the server catalog"
-                :class="{ 'tab-active': tab === 'validation' }" @click="tab = 'validation'">
-                Validation
-                <span class="badge badge-xs badge-warning ml-1" x-show="validationIssues().length" x-text="validationIssues().length"></span>
-            </button>
-            <button type="button" role="tab" class="tab whitespace-nowrap" title="Open the built-in event, behavior, reward, and publishing reference"
-                :class="{ 'tab-active': tab === 'guide' }" @click="tab = 'guide'">Authoring Guide</button>
-        </div>
-
-        <section x-show="tab === 'general'" x-cloak>@include('achievements.partials.general')</section>
-        <section x-show="tab === 'categories'" x-cloak>@include('achievements.partials.associations')</section>
-        <section x-show="tab === 'components'" x-cloak>@include('achievements.partials.components')</section>
-        <section x-show="tab === 'rewards'" x-cloak>@include('achievements.partials.rewards')</section>
-        <section x-show="tab === 'restrictions'" x-cloak>@include('achievements.partials.restrictions')</section>
-        <section x-show="tab === 'validation'" x-cloak>@include('achievements.partials.validation')</section>
-        <section x-show="tab === 'guide'" x-cloak>@include('achievements.partials.guide')</section>
+        @include('achievements.partials.tabs')
 
         <div class="sticky bottom-0 z-20 card bg-neutral/95 backdrop-blur border border-base-content/10 shadow-xl">
             <div class="card-body py-3 flex-row items-center justify-between gap-4">
                 <div class="text-sm opacity-70">
                     <span x-text="editor.enabled ? 'Enabled definition' : 'Disabled draft'"></span>
-                    · Version <span x-text="editor.definition_version"></span>
+                    · Version <span x-text="editor.version"></span>
                     · <span x-text="editor.components.length"></span> components
                 </div>
                 <button type="submit" class="btn btn-soft btn-success">
@@ -137,5 +103,7 @@
                 </button>
             </div>
         </div>
+
+        @include('items.partials.modal-icons')
     </form>
 </div>

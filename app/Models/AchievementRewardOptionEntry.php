@@ -9,7 +9,7 @@ class AchievementRewardOptionEntry extends BaseModel
 {
     protected $connection = 'eqemu';
 
-    protected $table = 'achievement_reward_option_entries';
+    protected $table = 'reward_option_entries';
 
     protected $primaryKey = null;
 
@@ -20,6 +20,7 @@ class AchievementRewardOptionEntry extends BaseModel
     protected $fillable = [
         'reward_set_id',
         'option_id',
+        'sequence',
         'reward_id',
     ];
 

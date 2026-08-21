@@ -207,7 +207,6 @@ final class AchievementMetadata
             self::PROGRESS_BOOLEAN,
         ],
         self::EVENT_ZONE_ENTER => [
-            self::PROGRESS_INCREMENT,
             self::PROGRESS_HIGHEST,
             self::PROGRESS_SET,
             self::PROGRESS_BOOLEAN,
@@ -341,48 +340,48 @@ final class AchievementMetadata
         self::CHARACTER_SELECTION_STATUS_AMBIGUOUS => 'Ambiguous Delivery',
     ];
 
-    public const MUTATION_TARGET_CHARACTER = 0;
+    public const UPDATE_TARGET_CHARACTER = 0;
 
-    public const MUTATION_TARGET_GROUP = 1;
+    public const UPDATE_TARGET_GROUP = 1;
 
-    public const MUTATION_TARGET_RAID = 2;
+    public const UPDATE_TARGET_RAID = 2;
 
-    public const MUTATION_TARGET_DYNAMIC_ZONE = 3;
+    public const UPDATE_TARGET_DYNAMIC_ZONE = 3;
 
-    public const MUTATION_TARGET_SHARED_TASK = 4;
+    public const UPDATE_TARGET_SHARED_TASK = 4;
 
-    public const MUTATION_TARGET_TYPES = [
-        self::MUTATION_TARGET_CHARACTER => 'Character',
-        self::MUTATION_TARGET_GROUP => 'Group',
-        self::MUTATION_TARGET_RAID => 'Raid',
-        self::MUTATION_TARGET_DYNAMIC_ZONE => 'Dynamic Zone',
-        self::MUTATION_TARGET_SHARED_TASK => 'Shared Task',
+    public const UPDATE_TARGET_TYPES = [
+        self::UPDATE_TARGET_CHARACTER => 'Character',
+        self::UPDATE_TARGET_GROUP => 'Group',
+        self::UPDATE_TARGET_RAID => 'Raid',
+        self::UPDATE_TARGET_DYNAMIC_ZONE => 'Dynamic Zone',
+        self::UPDATE_TARGET_SHARED_TASK => 'Shared Task',
     ];
 
-    public const MUTATION_OPERATION_ADVANCE = 0;
+    public const UPDATE_OPERATION_ADVANCE = 0;
 
-    public const MUTATION_OPERATION_COMPLETE = 1;
+    public const UPDATE_OPERATION_COMPLETE = 1;
 
-    public const MUTATION_OPERATIONS = [
-        self::MUTATION_OPERATION_ADVANCE => 'Advance',
-        self::MUTATION_OPERATION_COMPLETE => 'Complete',
+    public const UPDATE_OPERATIONS = [
+        self::UPDATE_OPERATION_ADVANCE => 'Advance',
+        self::UPDATE_OPERATION_COMPLETE => 'Complete',
     ];
 
-    public const CHARACTER_MUTATION_STATUS_PENDING = 0;
+    public const CHARACTER_UPDATE_STATUS_PENDING = 0;
 
-    public const CHARACTER_MUTATION_STATUS_BLOCKED = 1;
+    public const CHARACTER_UPDATE_STATUS_BLOCKED = 1;
 
-    public const CHARACTER_MUTATION_STATUS_PROCESSING = 2;
+    public const CHARACTER_UPDATE_STATUS_PROCESSING = 2;
 
-    public const CHARACTER_MUTATION_STATUSES = [
-        self::CHARACTER_MUTATION_STATUS_PENDING => 'Pending',
-        self::CHARACTER_MUTATION_STATUS_BLOCKED => 'Blocked',
-        self::CHARACTER_MUTATION_STATUS_PROCESSING => 'Processing',
+    public const CHARACTER_UPDATE_STATUSES = [
+        self::CHARACTER_UPDATE_STATUS_PENDING => 'Pending',
+        self::CHARACTER_UPDATE_STATUS_BLOCKED => 'Blocked',
+        self::CHARACTER_UPDATE_STATUS_PROCESSING => 'Processing',
     ];
 
     public const SKILL_WILDCARD_TARGET_ID = 4294967295;
 
-    public const MUTATION_PROCESSING_LEASE_SECONDS = 60;
+    public const UPDATE_PROCESSING_LEASE_SECONDS = 60;
 
     /**
      * UI-facing target semantics from achievement_authoring.md.
@@ -440,7 +439,7 @@ final class AchievementMetadata
             'target_id2_help' => 'Must be 0.',
             'target_value_label' => 'Minimum Event Value',
             'target_value_help' => 'Zone entry observes 1; normally use 0 or 1.',
-            'replay' => 'Only the current zone is reconciled.',
+            'replay' => 'Only the current zone is reconciled. Increment mode is rejected; use Highest, Set, or Boolean.',
         ],
         self::EVENT_LOOT_ITEM => [
             'target_id_label' => 'Item ID',
@@ -560,19 +559,19 @@ final class AchievementMetadata
         return self::CHARACTER_SELECTION_STATUSES[$status] ?? "Unknown ({$status})";
     }
 
-    public static function mutationTargetTypeLabel(int $targetType): string
+    public static function updateTargetTypeLabel(int $targetType): string
     {
-        return self::MUTATION_TARGET_TYPES[$targetType] ?? "Unknown ({$targetType})";
+        return self::UPDATE_TARGET_TYPES[$targetType] ?? "Unknown ({$targetType})";
     }
 
-    public static function mutationOperationLabel(int $operation): string
+    public static function updateOperationLabel(int $operation): string
     {
-        return self::MUTATION_OPERATIONS[$operation] ?? "Unknown ({$operation})";
+        return self::UPDATE_OPERATIONS[$operation] ?? "Unknown ({$operation})";
     }
 
-    public static function characterMutationStatusLabel(int $status): string
+    public static function characterUpdateStatusLabel(int $status): string
     {
-        return self::CHARACTER_MUTATION_STATUSES[$status] ?? "Unknown ({$status})";
+        return self::CHARACTER_UPDATE_STATUSES[$status] ?? "Unknown ({$status})";
     }
 
     public static function targetGuidance(int $eventType): array

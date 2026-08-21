@@ -8,7 +8,7 @@ class AchievementCastRestriction extends BaseModel
 {
     protected $connection = 'eqemu';
 
-    protected $table = 'achievement_cast_restrictions';
+    protected $table = 'achievement_cast_requirements';
 
     protected $primaryKey = null;
 

@@ -13,6 +13,17 @@ class AchievementAggregateService
 {
     private const UINT32_MAX = 4294967295;
 
+    private const REWARD_SOURCE_ACHIEVEMENT = 1;
+
+    /** @var list<string> */
+    private const CHARACTER_ACHIEVEMENT_STATE_TABLES = [
+        'character_achievements',
+        'character_achievement_progress',
+        'character_achievement_rewards',
+        'character_achievement_reward_selections',
+        'character_achievement_pending_updates',
+    ];
+
     public function metadata(): array
     {
         return [
@@ -55,13 +66,15 @@ class AchievementAggregateService
     public function editorPayload(?int $achievementId = null): array
     {
         $connection = DB::connection('eqemu');
-        $suggestedAchievementId = $this->suggestedId($connection, 'achievements', 'id');
+        $suggestedAchievementId = $achievementId === null
+            ? $this->suggestedAchievementId($connection)
+            : $this->suggestedId($connection, 'achievements', 'id');
         $suggestedComponentId = $this->suggestedId(
             $connection,
-            'achievement_component_counts',
+            'achievement_associations',
             'component_id'
         );
-        $suggestedRewardSetId = $this->suggestedId($connection, 'achievement_reward_sets', 'reward_set_id');
+        $suggestedRewardSetId = $this->suggestedId($connection, 'reward_sets', 'reward_set_id');
 
         if ($achievementId === null) {
             return [
@@ -70,9 +83,9 @@ class AchievementAggregateService
                 'description' => '',
                 'icon_id' => 0,
                 'points' => 0,
-                'reward_display' => 0,
-                'world_display_flag' => 0,
-                'definition_version' => 1,
+                'has_reward' => 0,
+                'client_flag' => 0,
+                'version' => 0,
                 'reset_on_version_change' => 1,
                 'enabled' => 0,
                 'associations' => [],
@@ -130,7 +143,7 @@ class AchievementAggregateService
 
         $components = $connection->table('achievement_components AS component')
             ->leftJoin(
-                'achievement_component_counts AS count',
+                'achievement_associations AS count',
                 'count.component_id',
                 '=',
                 'component.component_id'
@@ -143,8 +156,8 @@ class AchievementAggregateService
                 'component.component_type',
                 'component.sequence',
                 'component.component_id',
+                'component.name',
                 'component.description',
-                'component.description_2',
                 'count.required_count AS presentation_count',
             ])
             ->map(function (object $row) use ($criteriaByComponent) {
@@ -154,57 +167,51 @@ class AchievementAggregateService
                     'component_type' => (int) $row->component_type,
                     'sequence' => (int) $row->sequence,
                     'component_id' => (int) $row->component_id,
+                    'name' => (string) $row->name,
                     'description' => (string) $row->description,
-                    'description_2' => (string) $row->description_2,
                     'presentation_count' => max(1, (int) ($row->presentation_count ?? 1)),
                     'criteria' => $criteriaByComponent[$key] ?? [],
                 ];
             })
             ->all();
 
-        $rewards = $connection->table('achievement_rewards AS reward')
-            ->leftJoin(
-                'achievement_reward_option_entries AS mapping',
-                'mapping.reward_id',
-                '=',
-                'reward.reward_id'
-            )
-            ->where('reward.achievement_id', $achievementId)
-            ->orderBy('reward.sequence')
-            ->orderBy('reward.reward_id')
+        $automaticRewards = $connection->table('reward_source_entries AS entry')
+            ->join('rewards AS reward', 'reward.reward_id', '=', 'entry.reward_id')
+            ->where('entry.source_type', self::REWARD_SOURCE_ACHIEVEMENT)
+            ->where('entry.source_id', $achievementId)
+            ->orderBy('entry.sequence')
+            ->orderBy('entry.reward_id')
             ->get([
                 'reward.reward_id',
-                'reward.sequence',
+                'entry.sequence',
                 'reward.reward_type',
                 'reward.reward_data_id',
                 'reward.amount',
                 'reward.description',
                 'reward.enabled',
-                'mapping.option_id',
             ])
-            ->map(fn (object $row) => [
-                'reward_id' => (string) $row->reward_id,
-                'sequence' => (int) $row->sequence,
-                'reward_type' => (int) $row->reward_type,
-                'reward_data_id' => (int) $row->reward_data_id,
-                'amount' => (string) $row->amount,
-                'description' => (string) $row->description,
-                'enabled' => (int) $row->enabled,
-                'option_id' => $row->option_id === null ? null : (int) $row->option_id,
-            ])
-            ->all();
+            ->map(fn (object $row) => $this->rewardPayloadRow($row, null));
 
-        $rewardSetRow = $connection->table('achievement_reward_sets')
-            ->where('achievement_id', $achievementId)
-            ->first();
+        $rewardSource = $connection->table('reward_sources AS source')
+            ->join('reward_sets AS reward_set', 'reward_set.reward_set_id', '=', 'source.reward_set_id')
+            ->where('source.source_type', self::REWARD_SOURCE_ACHIEVEMENT)
+            ->where('source.source_id', $achievementId)
+            ->first([
+                'source.reward_set_id',
+                'source.enabled AS source_enabled',
+                'reward_set.title',
+                'reward_set.enabled',
+            ]);
         $rewardSet = null;
-        if ($rewardSetRow) {
-            $rewardSetId = (int) $rewardSetRow->reward_set_id;
+        $selectableRewards = collect();
+        if ($rewardSource) {
+            $rewardSetId = (int) $rewardSource->reward_set_id;
             $rewardSet = [
                 'reward_set_id' => $rewardSetId,
-                'title' => (string) $rewardSetRow->title,
-                'enabled' => (int) $rewardSetRow->enabled,
-                'options' => $connection->table('achievement_reward_options')
+                'title' => (string) $rewardSource->title,
+                'enabled' => (int) $rewardSource->enabled,
+                'source_enabled' => (int) $rewardSource->source_enabled,
+                'options' => $connection->table('reward_options')
                     ->where('reward_set_id', $rewardSetId)
                     ->orderBy('sequence')
                     ->orderBy('option_id')
@@ -219,9 +226,29 @@ class AchievementAggregateService
                     ])
                     ->all(),
             ];
+
+            $selectableRewards = $connection->table('reward_option_entries AS entry')
+                ->join('rewards AS reward', 'reward.reward_id', '=', 'entry.reward_id')
+                ->where('entry.reward_set_id', $rewardSetId)
+                ->orderBy('entry.option_id')
+                ->orderBy('entry.sequence')
+                ->orderBy('entry.reward_id')
+                ->get([
+                    'reward.reward_id',
+                    'entry.sequence',
+                    'entry.option_id',
+                    'reward.reward_type',
+                    'reward.reward_data_id',
+                    'reward.amount',
+                    'reward.description',
+                    'reward.enabled',
+                ])
+                ->map(fn (object $row) => $this->rewardPayloadRow($row, (int) $row->option_id));
         }
 
-        $restrictions = $connection->table('achievement_cast_restrictions')
+        $rewards = $automaticRewards->concat($selectableRewards)->values()->all();
+
+        $restrictions = $connection->table('achievement_cast_requirements')
             ->where('achievement_id', $achievementId)
             ->orderBy('restriction_id')
             ->get()
@@ -237,9 +264,9 @@ class AchievementAggregateService
             'description' => (string) $definition->description,
             'icon_id' => (int) $definition->icon_id,
             'points' => (int) $definition->points,
-            'reward_display' => (int) $definition->reward_display,
-            'world_display_flag' => (int) $definition->world_display_flag,
-            'definition_version' => (int) $definition->definition_version,
+            'has_reward' => (int) $definition->has_reward,
+            'client_flag' => (int) $definition->client_flag,
+            'version' => (int) $definition->version,
             'reset_on_version_change' => (int) $definition->reset_on_version_change,
             'enabled' => (int) $definition->enabled,
             'associations' => $associations,
@@ -339,6 +366,12 @@ class AchievementAggregateService
             if ($connection->table('achievements')->where('id', $achievementId)->lockForUpdate()->exists()) {
                 $this->fail('id', "Achievement {$achievementId} already exists.");
             }
+            if ($this->achievementIdHasCharacterState($connection, $achievementId, true)) {
+                $this->fail(
+                    'id',
+                    "Achievement {$achievementId} has preserved character state and cannot be reused. Choose a new stable ID."
+                );
+            }
 
             $this->assertAggregateReferences($connection, $data, $achievementId);
             $connection->table('achievements')->insert($this->achievementRow($data));
@@ -385,9 +418,10 @@ class AchievementAggregateService
             }
 
             $data = $this->editorPayload($achievementId);
-            $newAchievementId = $this->allocateId($connection, 'achievements', 'id', 'id');
+            $newAchievementId = $this->allocateAchievementId($connection);
             $data['id'] = $newAchievementId;
             $data['name'] = Str::limit((string) $data['name'], 248, '').' (Copy)';
+            $data['version'] = 0;
             $data['enabled'] = 0;
             $data['restrictions'] = [];
             foreach ($data['rewards'] as &$reward) {
@@ -430,41 +464,25 @@ class AchievementAggregateService
                 );
             }
 
-            $rewardIds = $connection->table('achievement_rewards')
-                ->where('achievement_id', $achievementId)
-                ->lockForUpdate()
-                ->pluck('reward_id')
-                ->all();
-            $rewardSetIds = $connection->table('achievement_reward_sets')
-                ->where('achievement_id', $achievementId)
-                ->lockForUpdate()
-                ->pluck('reward_set_id')
-                ->all();
-
-            if ($rewardIds !== []) {
-                $connection->table('achievement_reward_option_entries')
-                    ->whereIn('reward_id', $rewardIds)
-                    ->delete();
-            }
-            if ($rewardSetIds !== []) {
-                $connection->table('achievement_reward_option_entries')
-                    ->whereIn('reward_set_id', $rewardSetIds)
-                    ->delete();
-                $connection->table('achievement_reward_options')
-                    ->whereIn('reward_set_id', $rewardSetIds)
-                    ->delete();
-            }
-
-            $connection->table('achievement_reward_sets')->where('achievement_id', $achievementId)->delete();
-            $connection->table('achievement_rewards')->where('achievement_id', $achievementId)->delete();
-            $connection->table('achievement_cast_restrictions')->where('achievement_id', $achievementId)->delete();
+            // The shared reward catalog is intentionally retained. Removing
+            // this achievement only detaches its provider mappings; reward
+            // definitions and sets may be reused by tasks or other sources.
+            $connection->table('reward_source_entries')
+                ->where('source_type', self::REWARD_SOURCE_ACHIEVEMENT)
+                ->where('source_id', $achievementId)
+                ->delete();
+            $connection->table('reward_sources')
+                ->where('source_type', self::REWARD_SOURCE_ACHIEVEMENT)
+                ->where('source_id', $achievementId)
+                ->delete();
+            $connection->table('achievement_cast_requirements')->where('achievement_id', $achievementId)->delete();
             $connection->table('achievement_criteria')->where('achievement_id', $achievementId)->delete();
             $connection->table('achievement_components')->where('achievement_id', $achievementId)->delete();
             $connection->table('achievement_category_associations')->where('achievement_id', $achievementId)->delete();
             $connection->table('achievements')->where('id', $achievementId)->delete();
 
             // Character completion/progress/reward ledgers and the global
-            // component-count table are intentionally retained as history.
+            // component association table are intentionally retained as history.
         });
     }
 
@@ -575,7 +593,7 @@ class AchievementAggregateService
                 continue;
             }
 
-            $storedCount = $connection->table('achievement_component_counts')
+            $storedCount = $connection->table('achievement_associations')
                 ->where('component_id', $componentId)
                 ->lockForUpdate()
                 ->value('required_count');
@@ -602,14 +620,14 @@ class AchievementAggregateService
                 'component_type' => $componentType,
                 'sequence' => $sequence,
                 'component_id' => $componentId,
+                'name' => (string) ($component['name'] ?? ''),
                 'description' => (string) ($component['description'] ?? ''),
-                'description_2' => (string) ($component['description_2'] ?? ''),
             ];
 
             // component_id is a deliberately global presentation identity.
             // Never delete its count merely because this aggregate stopped
             // using it; edit/create only upserts the submitted value.
-            $connection->table('achievement_component_counts')->updateOrInsert(
+            $connection->table('achievement_associations')->updateOrInsert(
                 ['component_id' => $componentId],
                 ['required_count' => (int) $component['presentation_count']]
             );
@@ -646,12 +664,17 @@ class AchievementAggregateService
         array $rewards,
         ?array $rewardSet
     ): void {
-        $existingRewardIds = $connection->table('achievement_rewards')
-            ->where('achievement_id', $achievementId)
+        $existingSource = $connection->table('reward_sources')
+            ->where('source_type', self::REWARD_SOURCE_ACHIEVEMENT)
+            ->where('source_id', $achievementId)
             ->lockForUpdate()
-            ->pluck('reward_id')
-            ->map(fn ($id) => (string) $id)
-            ->all();
+            ->first();
+        $existingSetId = $existingSource ? (int) $existingSource->reward_set_id : null;
+        $existingRewardIds = $this->existingGraphRewardIds(
+            $connection,
+            $achievementId,
+            $existingSetId
+        );
         $existingRewardIdMap = array_fill_keys($existingRewardIds, true);
         foreach ($rewards as $index => $reward) {
             if (($reward['reward_id'] ?? null) === null) {
@@ -660,30 +683,54 @@ class AchievementAggregateService
             if (! isset($existingRewardIdMap[(string) $reward['reward_id']])) {
                 $this->fail(
                     "rewards.{$index}.reward_id",
-                    'Existing reward IDs are immutable and cannot be adopted from another achievement.'
+                    'Existing reward IDs are immutable and cannot be adopted from outside this achievement source graph.'
                 );
             }
         }
 
-        $existingSet = $connection->table('achievement_reward_sets')
-            ->where('achievement_id', $achievementId)
-            ->lockForUpdate()
-            ->first();
+        $existingSetShared = $existingSetId !== null
+            && $connection->table('reward_sources')
+                ->where('reward_set_id', $existingSetId)
+                ->where(function ($query) use ($achievementId): void {
+                    $query->where('source_type', '!=', self::REWARD_SOURCE_ACHIEVEMENT)
+                        ->orWhere('source_id', '!=', $achievementId);
+                })
+                ->lockForUpdate()
+                ->exists();
         $rewardSetId = null;
         if ($rewardSet !== null) {
             $requestedSetId = $rewardSet['reward_set_id'] ?? null;
-            if ($existingSet) {
-                if ($requestedSetId === null || (int) $requestedSetId !== (int) $existingSet->reward_set_id) {
+            if ($existingSource) {
+                if ($requestedSetId === null) {
                     $this->fail(
                         'reward_set.reward_set_id',
-                        'The stable reward-set ID cannot be changed after creation.'
+                        'A selectable reward source requires a stable reward-set ID.'
                     );
                 }
-                $rewardSetId = (int) $existingSet->reward_set_id;
+                $rewardSetId = (int) $requestedSetId;
+                if ($rewardSetId !== $existingSetId) {
+                    if (! $existingSetShared) {
+                        $this->fail(
+                            'reward_set.reward_set_id',
+                            'The stable reward-set ID cannot be changed after creation unless the current set is shared and must be forked.'
+                        );
+                    }
+                    if (
+                        $connection->table('reward_sets')
+                            ->where('reward_set_id', $rewardSetId)
+                            ->lockForUpdate()
+                            ->exists()
+                    ) {
+                        $this->fail(
+                            'reward_set.reward_set_id',
+                            'Choose an unused reward-set ID when forking a shared set.'
+                        );
+                    }
+                }
             } elseif ($requestedSetId !== null) {
                 $rewardSetId = (int) $requestedSetId;
                 if (
-                    $connection->table('achievement_reward_sets')
+                    $connection->table('reward_sets')
                         ->where('reward_set_id', $rewardSetId)
                         ->lockForUpdate()
                         ->exists()
@@ -693,50 +740,60 @@ class AchievementAggregateService
             } else {
                 $rewardSetId = $this->allocateId(
                     $connection,
-                    'achievement_reward_sets',
+                    'reward_sets',
                     'reward_set_id',
                     'reward_set.reward_set_id'
                 );
             }
         }
 
-        if ($existingRewardIds !== []) {
-            $connection->table('achievement_reward_option_entries')
-                ->whereIn('reward_id', $existingRewardIds)
-                ->delete();
+        $sharedSet = $existingSetShared && $rewardSetId === $existingSetId;
+        if ($sharedSet && $rewardSet !== null) {
+            $this->assertSharedRewardSetUnchanged($connection, $existingSetId, $rewardSet, $rewards);
         }
-        if ($existingSet) {
-            $connection->table('achievement_reward_option_entries')
-                ->where('reward_set_id', $existingSet->reward_set_id)
-                ->delete();
-            $connection->table('achievement_reward_options')
-                ->where('reward_set_id', $existingSet->reward_set_id)
-                ->delete();
-            $connection->table('achievement_reward_sets')
-                ->where('reward_set_id', $existingSet->reward_set_id)
-                ->delete();
-        }
-        // Reinsert retained canonical IDs so sequence swaps cannot collide
-        // with the unique (achievement_id, sequence) key.
-        $connection->table('achievement_rewards')->where('achievement_id', $achievementId)->delete();
+
+        $connection->table('reward_source_entries')
+            ->where('source_type', self::REWARD_SOURCE_ACHIEVEMENT)
+            ->where('source_id', $achievementId)
+            ->delete();
 
         $savedRewards = [];
         foreach ($rewards as $index => $reward) {
-            $row = [
-                'achievement_id' => $achievementId,
-                'sequence' => (int) $reward['sequence'],
-                'reward_type' => (int) $reward['reward_type'],
-                'reward_data_id' => (int) $reward['reward_data_id'],
-                'amount' => (int) $reward['amount'],
-                'description' => (string) ($reward['description'] ?? ''),
-                'enabled' => (int) $reward['enabled'],
-            ];
+            $row = $this->rewardCanonicalRow($reward);
 
             if (($reward['reward_id'] ?? null) !== null) {
                 $rewardId = (int) $reward['reward_id'];
-                $connection->table('achievement_rewards')->insert(['reward_id' => $rewardId] + $row);
+                $stored = $connection->table('rewards')
+                    ->where('reward_id', $rewardId)
+                    ->lockForUpdate()
+                    ->first();
+                if (! $stored) {
+                    $this->fail("rewards.{$index}.reward_id", 'The canonical reward row no longer exists.');
+                }
+                $sharedReward = ($existingSetShared && ($reward['option_id'] ?? null) !== null)
+                    || $this->rewardIsReferencedOutsideGraph(
+                        $connection,
+                        $rewardId,
+                        $achievementId,
+                        $existingSetId
+                    );
+                if ($sharedReward && ! $this->rewardRowMatches($stored, $row)) {
+                    $this->fail(
+                        "rewards.{$index}",
+                        'This canonical reward is shared by another source. Detach or clone it before changing the grant definition.'
+                    );
+                }
+                if (! $sharedReward) {
+                    $connection->table('rewards')->where('reward_id', $rewardId)->update($row);
+                }
             } else {
-                $rewardId = (int) $connection->table('achievement_rewards')
+                if ($sharedSet && ($reward['option_id'] ?? null) !== null) {
+                    $this->fail(
+                        "rewards.{$index}",
+                        'A shared reward set cannot receive a new grant from one source. Use a new reward-set ID first.'
+                    );
+                }
+                $rewardId = (int) $connection->table('rewards')
                     ->insertGetId($row, 'reward_id');
                 if ($rewardId < 1 || $rewardId > self::UINT32_MAX) {
                     $this->fail(
@@ -747,8 +804,25 @@ class AchievementAggregateService
             }
             $savedRewards[] = [
                 'reward_id' => $rewardId,
+                'sequence' => (int) $reward['sequence'],
                 'option_id' => $reward['option_id'] ?? null,
             ];
+        }
+
+        $automaticRows = [];
+        foreach ($savedRewards as $index => $reward) {
+            if ($reward['option_id'] !== null) {
+                continue;
+            }
+            $automaticRows[] = [
+                'source_type' => self::REWARD_SOURCE_ACHIEVEMENT,
+                'source_id' => $achievementId,
+                'sequence' => $reward['sequence'],
+                'reward_id' => $reward['reward_id'],
+            ];
+        }
+        if ($automaticRows !== []) {
+            $connection->table('reward_source_entries')->insert($automaticRows);
         }
 
         if ($rewardSet === null) {
@@ -758,15 +832,35 @@ class AchievementAggregateService
                 }
             }
 
+            $connection->table('reward_sources')
+                ->where('source_type', self::REWARD_SOURCE_ACHIEVEMENT)
+                ->where('source_id', $achievementId)
+                ->delete();
+
             return;
         }
 
-        $connection->table('achievement_reward_sets')->insert([
+        $connection->table('reward_sources')->updateOrInsert([
+            'source_type' => self::REWARD_SOURCE_ACHIEVEMENT,
+            'source_id' => $achievementId,
+        ], [
             'reward_set_id' => $rewardSetId,
-            'achievement_id' => $achievementId,
+            'enabled' => (int) ($rewardSet['source_enabled'] ?? 1),
+        ]);
+
+        if ($sharedSet) {
+            return;
+        }
+
+        $connection->table('reward_sets')->updateOrInsert([
+            'reward_set_id' => $rewardSetId,
+        ], [
             'title' => (string) ($rewardSet['title'] ?? ''),
             'enabled' => (int) $rewardSet['enabled'],
         ]);
+
+        $connection->table('reward_option_entries')->where('reward_set_id', $rewardSetId)->delete();
+        $connection->table('reward_options')->where('reward_set_id', $rewardSetId)->delete();
 
         $optionRows = [];
         $optionIds = [];
@@ -784,7 +878,7 @@ class AchievementAggregateService
             ];
         }
         if ($optionRows !== []) {
-            $connection->table('achievement_reward_options')->insert($optionRows);
+            $connection->table('reward_options')->insert($optionRows);
         }
 
         $mappingRows = [];
@@ -799,17 +893,18 @@ class AchievementAggregateService
             $mappingRows[] = [
                 'reward_set_id' => $rewardSetId,
                 'option_id' => $optionId,
+                'sequence' => $reward['sequence'],
                 'reward_id' => $reward['reward_id'],
             ];
         }
         if ($mappingRows !== []) {
-            $connection->table('achievement_reward_option_entries')->insert($mappingRows);
+            $connection->table('reward_option_entries')->insert($mappingRows);
         }
     }
 
     private function syncRestrictions(ConnectionInterface $connection, int $achievementId, array $restrictions): void
     {
-        $connection->table('achievement_cast_restrictions')
+        $connection->table('achievement_cast_requirements')
             ->where('achievement_id', $achievementId)
             ->delete();
 
@@ -822,7 +917,7 @@ class AchievementAggregateService
             ];
         }
         if ($rows !== []) {
-            $connection->table('achievement_cast_restrictions')->insert($rows);
+            $connection->table('achievement_cast_requirements')->insert($rows);
         }
     }
 
@@ -964,6 +1059,169 @@ class AchievementAggregateService
         }
     }
 
+    /**
+     * @return array<int, string>
+     */
+    private function existingGraphRewardIds(
+        ConnectionInterface $connection,
+        int $achievementId,
+        ?int $rewardSetId
+    ): array {
+        $ids = $connection->table('reward_source_entries')
+            ->where('source_type', self::REWARD_SOURCE_ACHIEVEMENT)
+            ->where('source_id', $achievementId)
+            ->lockForUpdate()
+            ->pluck('reward_id');
+        if ($rewardSetId !== null) {
+            $ids = $ids->concat(
+                $connection->table('reward_option_entries')
+                    ->where('reward_set_id', $rewardSetId)
+                    ->lockForUpdate()
+                    ->pluck('reward_id')
+            );
+        }
+
+        return $ids->map(fn ($id) => (string) $id)->unique()->values()->all();
+    }
+
+    private function rewardPayloadRow(object $row, ?int $optionId): array
+    {
+        return [
+            'reward_id' => (string) $row->reward_id,
+            'sequence' => (int) $row->sequence,
+            'reward_type' => (int) $row->reward_type,
+            'reward_data_id' => (int) $row->reward_data_id,
+            'amount' => (string) $row->amount,
+            'description' => (string) $row->description,
+            'enabled' => (int) $row->enabled,
+            'option_id' => $optionId,
+        ];
+    }
+
+    private function rewardCanonicalRow(array $reward): array
+    {
+        return [
+            'reward_type' => (int) $reward['reward_type'],
+            'reward_data_id' => (int) $reward['reward_data_id'],
+            'amount' => (string) $reward['amount'],
+            'description' => (string) ($reward['description'] ?? ''),
+            'enabled' => (int) $reward['enabled'],
+        ];
+    }
+
+    private function rewardRowMatches(object $stored, array $submitted): bool
+    {
+        return (int) $stored->reward_type === $submitted['reward_type']
+            && (int) $stored->reward_data_id === $submitted['reward_data_id']
+            && (string) $stored->amount === (string) $submitted['amount']
+            && (string) $stored->description === $submitted['description']
+            && (int) $stored->enabled === $submitted['enabled'];
+    }
+
+    private function rewardIsReferencedOutsideGraph(
+        ConnectionInterface $connection,
+        int $rewardId,
+        int $achievementId,
+        ?int $rewardSetId
+    ): bool {
+        $otherAutomatic = $connection->table('reward_source_entries')
+            ->where('reward_id', $rewardId)
+            ->where(function ($query) use ($achievementId): void {
+                $query->where('source_type', '!=', self::REWARD_SOURCE_ACHIEVEMENT)
+                    ->orWhere('source_id', '!=', $achievementId);
+            })
+            ->lockForUpdate()
+            ->exists();
+        if ($otherAutomatic) {
+            return true;
+        }
+
+        $otherOption = $connection->table('reward_option_entries')
+            ->where('reward_id', $rewardId);
+        if ($rewardSetId !== null) {
+            $otherOption->where('reward_set_id', '!=', $rewardSetId);
+        }
+
+        return $otherOption->lockForUpdate()->exists();
+    }
+
+    private function assertSharedRewardSetUnchanged(
+        ConnectionInterface $connection,
+        int $rewardSetId,
+        array $rewardSet,
+        array $rewards
+    ): void {
+        $storedSet = $connection->table('reward_sets')
+            ->where('reward_set_id', $rewardSetId)
+            ->lockForUpdate()
+            ->first();
+        $storedOptions = $connection->table('reward_options')
+            ->where('reward_set_id', $rewardSetId)
+            ->orderBy('sequence')
+            ->orderBy('option_id')
+            ->lockForUpdate()
+            ->get()
+            ->map(fn (object $option) => [
+                'option_id' => (int) $option->option_id,
+                'sequence' => (int) $option->sequence,
+                'label' => (string) $option->label,
+                'common_to_all' => (int) $option->common_to_all,
+                'flags' => (int) $option->flags,
+                'enabled' => (int) $option->enabled,
+            ])
+            ->values()
+            ->all();
+        $submittedOptions = collect($rewardSet['options'] ?? [])
+            ->map(fn (array $option) => [
+                'option_id' => (int) $option['option_id'],
+                'sequence' => (int) $option['sequence'],
+                'label' => (string) ($option['label'] ?? ''),
+                'common_to_all' => (int) $option['common_to_all'],
+                'flags' => (int) $option['flags'],
+                'enabled' => (int) $option['enabled'],
+            ])
+            ->sortBy([['sequence', 'asc'], ['option_id', 'asc']])
+            ->values()
+            ->all();
+        $storedEntries = $connection->table('reward_option_entries')
+            ->where('reward_set_id', $rewardSetId)
+            ->orderBy('option_id')
+            ->orderBy('sequence')
+            ->orderBy('reward_id')
+            ->lockForUpdate()
+            ->get()
+            ->map(fn (object $entry) => [
+                'option_id' => (int) $entry->option_id,
+                'sequence' => (int) $entry->sequence,
+                'reward_id' => (string) $entry->reward_id,
+            ])
+            ->values()
+            ->all();
+        $submittedEntries = collect($rewards)
+            ->filter(fn (array $reward) => ($reward['option_id'] ?? null) !== null)
+            ->map(fn (array $reward) => [
+                'option_id' => (int) $reward['option_id'],
+                'sequence' => (int) $reward['sequence'],
+                'reward_id' => isset($reward['reward_id']) ? (string) $reward['reward_id'] : '',
+            ])
+            ->sortBy([['option_id', 'asc'], ['sequence', 'asc'], ['reward_id', 'asc']])
+            ->values()
+            ->all();
+
+        if (
+            ! $storedSet
+            || (string) $storedSet->title !== (string) ($rewardSet['title'] ?? '')
+            || (int) $storedSet->enabled !== (int) $rewardSet['enabled']
+            || $storedOptions !== $submittedOptions
+            || $storedEntries !== $submittedEntries
+        ) {
+            $this->fail(
+                'reward_set',
+                'This reward set is shared by another source. Enter an unused reward-set ID to fork it before changing its title, options, or mappings; replace a grant with a new row before changing shared canonical grant data.'
+            );
+        }
+    }
+
     private function achievementRow(array $data, bool $includeId = true): array
     {
         $row = [
@@ -971,9 +1229,9 @@ class AchievementAggregateService
             'description' => (string) ($data['description'] ?? ''),
             'icon_id' => (int) $data['icon_id'],
             'points' => (int) $data['points'],
-            'reward_display' => (int) $data['reward_display'],
-            'world_display_flag' => (int) $data['world_display_flag'],
-            'definition_version' => (int) $data['definition_version'],
+            'has_reward' => (int) $data['has_reward'],
+            'client_flag' => (int) $data['client_flag'],
+            'version' => (int) $data['version'],
             'reset_on_version_change' => (int) $data['reset_on_version_change'],
             'enabled' => (int) $data['enabled'],
         ];
@@ -1005,6 +1263,62 @@ class AchievementAggregateService
         $max = (int) ($connection->table($table)->max($column) ?? 0);
 
         return $max >= self::UINT32_MAX ? self::UINT32_MAX : $max + 1;
+    }
+
+    private function suggestedAchievementId(ConnectionInterface $connection): int
+    {
+        $max = $this->highestAchievementId($connection);
+
+        return $max >= self::UINT32_MAX ? self::UINT32_MAX : $max + 1;
+    }
+
+    private function allocateAchievementId(ConnectionInterface $connection): int
+    {
+        $max = $this->highestAchievementId($connection, true);
+        if ($max >= self::UINT32_MAX) {
+            $this->fail('id', 'No unsigned 32-bit achievement IDs remain above existing content or preserved character state.');
+        }
+
+        return $max + 1;
+    }
+
+    private function highestAchievementId(
+        ConnectionInterface $connection,
+        bool $lock = false
+    ): int {
+        $query = $connection->table('achievements');
+        if ($lock) {
+            $query->lockForUpdate();
+        }
+        $max = (int) ($query->max('id') ?? 0);
+
+        foreach (self::CHARACTER_ACHIEVEMENT_STATE_TABLES as $table) {
+            $query = $connection->table($table);
+            if ($lock) {
+                $query->lockForUpdate();
+            }
+            $max = max($max, (int) ($query->max('achievement_id') ?? 0));
+        }
+
+        return $max;
+    }
+
+    private function achievementIdHasCharacterState(
+        ConnectionInterface $connection,
+        int $achievementId,
+        bool $lock = false
+    ): bool {
+        foreach (self::CHARACTER_ACHIEVEMENT_STATE_TABLES as $table) {
+            $query = $connection->table($table)->where('achievement_id', $achievementId);
+            if ($lock) {
+                $query->lockForUpdate();
+            }
+            if ($query->exists()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function allocateId(

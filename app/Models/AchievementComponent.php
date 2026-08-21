@@ -22,8 +22,8 @@ class AchievementComponent extends BaseModel
         'component_type',
         'sequence',
         'component_id',
+        'name',
         'description',
-        'description_2',
     ];
 
     public function achievement(): BelongsTo

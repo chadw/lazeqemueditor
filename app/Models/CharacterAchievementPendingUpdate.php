@@ -5,13 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class CharacterAchievementPendingMutation extends BaseModel
+class CharacterAchievementPendingUpdate extends BaseModel
 {
     protected $connection = 'eqemu';
 
-    protected $table = 'character_achievement_pending_mutations';
+    protected $table = 'character_achievement_pending_updates';
 
-    protected $primaryKey = 'mutation_id';
+    protected $primaryKey = 'update_id';
 
     protected $keyType = 'int';
 
@@ -26,7 +26,7 @@ class CharacterAchievementPendingMutation extends BaseModel
         'component_type',
         'component_id',
         'requested_value',
-        'definition_version',
+        'version',
         'status',
         'attempt_count',
         'created_at',

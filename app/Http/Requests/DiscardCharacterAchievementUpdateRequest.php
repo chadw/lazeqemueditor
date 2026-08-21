@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests;
 
-class DiscardCharacterAchievementMutationRequest extends BaseRequest
+class DiscardCharacterAchievementUpdateRequest extends BaseRequest
 {
     public function authorize(): bool
     {
