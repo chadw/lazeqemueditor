@@ -74,7 +74,7 @@ class SpellController extends Controller
 
     public function update(SpellRequest $request, Spell $spell)
     {
-        $input = $request->except(['_token', '_method', 'spell_tabs']);
+        $input = $request->except(['_token', '_method', 'spell_tabs', 'confirm_id_replace']);
 
         $newId = isset($input['id']) ? (int)$input['id'] : (int)$spell->id;
         if ($newId !== (int)$spell->id) {
