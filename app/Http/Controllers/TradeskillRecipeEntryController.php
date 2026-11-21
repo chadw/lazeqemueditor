@@ -30,7 +30,7 @@ class TradeskillRecipeEntryController extends Controller
                         'failcount'      => $data['failcount'] ?? 0,
                         'componentcount' => $data['componentcount'] ?? 1,
                         'salvagecount'   => $data['salvagecount'] ?? 0,
-                        'iscontainer'    => 0,
+                        'iscontainer'    => $data['iscontainer'] ?? 0,
                     ];
                 })->toArray();
 

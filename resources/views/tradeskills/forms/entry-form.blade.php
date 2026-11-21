@@ -7,7 +7,7 @@
                     <x-form.select
                         name="template_container_id"
                         label="Container Template"
-                        :options="['' => 'None'] + $containerTemplates->pluck('name', 'id')->toArray()"
+                        :options="['' => 'None'] + $containerTemplates->pluck('name', 'template_id')->toArray()"
                         x-model="$store.modalForm.form.template_container_id"
                     />
                 </div>
